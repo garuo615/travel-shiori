@@ -3,10 +3,122 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>旅行のしおり - GitHub Pages</title>
+    <title>京都・滋賀 旅のしおり</title>
+    <style>
+        /* 京都・滋賀 旅のしおりテーマ（暖色系） */
+        :root {
+            --primary-color: #ed6d3d; /* 深いオレンジ */
+            --bg-color: #fdfcf8;      /* 和紙のようなオフホワイト */
+            --text-color: #4a3b32;    /* 焦げ茶色 */
+        }
+
+        body {
+            font-family: "Hiragino Mincho ProN", "Yu Mincho", serif; /* 明朝体で和の雰囲気 */
+            margin: 0;
+            padding: 0;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            text-align: center;
+        }
+
+        /* ヘッダー（表紙） */
+        header {
+            background-color: var(--primary-color);
+            color: white;
+            padding: 60px 20px;
+            border-bottom-left-radius: 30px;
+            border-bottom-right-radius: 30px;
+            box-shadow: 0 4px 10px rgba(237, 109, 61, 0.3);
+        }
+        
+        h1 {
+            margin: 0;
+            font-size: 28px;
+            letter-spacing: 2px;
+            font-weight: normal;
+        }
+        
+        .date {
+            margin-top: 10px;
+            font-size: 16px;
+            opacity: 0.9;
+            font-family: sans-serif;
+        }
+
+        /* メインメニュー */
+        .menu {
+            padding: 40px 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            max-width: 400px;
+            margin: 0 auto;
+        }
+
+        /* ボタンのデザイン */
+        .menu-btn {
+            display: block;
+            background-color: white;
+            color: var(--primary-color);
+            text-decoration: none;
+            padding: 20px;
+            border-radius: 15px;
+            border: 2px solid var(--primary-color);
+            font-weight: bold;
+            font-family: sans-serif;
+            transition: all 0.2s;
+            box-shadow: 0 4px 0 rgba(237, 109, 61, 0.2);
+            position: relative;
+        }
+
+        .menu-btn:active {
+            transform: translateY(2px);
+            box-shadow: none;
+            background-color: #fff5f0;
+        }
+
+        /* アイコン代わりの絵文字 */
+        .icon {
+            font-size: 24px;
+            margin-right: 10px;
+            vertical-align: middle;
+        }
+
+        /* フッター */
+        footer {
+            margin-top: 40px;
+            font-size: 12px;
+            color: #888;
+            padding-bottom: 20px;
+            font-family: sans-serif;
+        }
+    </style>
 </head>
 <body>
-    <h1>にこちゃん24歳誕生日旅行</h1>
-    <p>iPhoneでこのページが見られれば成功です。</p>
+
+    <header>
+        <h1>にこちゃん<br>誕生日旅行</h1>
+        <div class="date">2025.12.24 - 12.25</div>
+    </header>
+
+    <div class="menu">
+        <p>旅の準備を始めましょう</p>
+
+        <a href="mochimono.html" class="menu-btn">
+            <span class="icon">👜</span> 持ち物リスト
+        </a>
+
+        <a href="#" class="menu-btn" style="opacity: 0.5; cursor: default;">
+            <span class="icon">📅</span> スケジュール (準備中)
+        </a>
+        <a href="#" class="menu-btn" style="opacity: 0.5; cursor: default;">
+            <span class="icon">🗺️</span> マップ (準備中)
+        </a>
+    </div>
+
+    <footer>
+        Have a nice trip!
+    </footer>
+
 </body>
 </html>
