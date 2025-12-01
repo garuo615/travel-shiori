@@ -4,6 +4,11 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>京都・滋賀 旅のしおり</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=DotGothic16&display=swap" rel="stylesheet">
+
     <style>
         /* 京都・滋賀 旅のしおりテーマ（暖色系） */
         :root {
@@ -13,7 +18,7 @@
         }
 
         body {
-            font-family: "Hiragino Mincho ProN", "Yu Mincho", serif; /* 明朝体で和の雰囲気 */
+            font-family: "Hiragino Mincho ProN", "Yu Mincho", serif;
             margin: 0;
             padding: 0;
             background-color: var(--bg-color);
@@ -47,7 +52,7 @@
 
         /* メインメニュー */
         .menu {
-            padding: 40px 20px;
+            padding: 40px 20px 20px; /* 下の余白を少し調整 */
             display: flex;
             flex-direction: column;
             gap: 20px;
@@ -77,7 +82,6 @@
             background-color: #fff5f0;
         }
 
-        /* アイコン代わりの絵文字 */
         .icon {
             font-size: 24px;
             margin-right: 10px;
@@ -86,11 +90,88 @@
 
         /* フッター */
         footer {
-            margin-top: 40px;
+            margin-top: 20px;
             font-size: 12px;
             color: #888;
-            padding-bottom: 20px;
+            padding-bottom: 40px;
             font-family: sans-serif;
+        }
+
+        /* =========================================
+           キャラクターのスタイル（スクロール配置版）
+           ========================================= */
+        
+        #chara-container {
+            /* 画面固定(fixed)をやめて、ページの流れに沿って配置(relative) */
+            position: relative; 
+            margin: 60px auto 20px; /* メニューとの間に60pxの隙間を空ける */
+            width: 180px;           /* キャラの幅 */
+            z-index: 10;
+            cursor: pointer;
+            text-align: center;     /* 画像を中央寄せ */
+        }
+
+        #chara-img {
+            width: 100%;
+            height: auto;
+            filter: drop-shadow(3px 3px 0px rgba(0,0,0,0.2)); 
+            display: block;
+            margin: 0 auto;
+        }
+        
+        /* タップした時の動き */
+        #chara-container:active #chara-img {
+            transform: scale(0.95) translateY(5px);
+        }
+
+        /* 吹き出しのデザイン */
+        #speech-bubble {
+            position: absolute;
+            bottom: 100%;    /* キャラの真上に配置 */
+            left: 50%;       /* 左右中央 */
+            transform: translateX(-50%); /* 完全に真ん中へ */
+            
+            width: 260px;
+            
+            /* テーマカラーに合わせたデザイン */
+            background: #fff;
+            color: #4a3b32;
+            border: 3px solid #ed6d3d;
+            border-radius: 12px;
+            padding: 15px;
+            
+            font-family: 'DotGothic16', sans-serif;
+            font-size: 16px;
+            line-height: 1.6;
+            
+            display: none; /* 最初は隠す */
+            box-shadow: 4px 4px 0px rgba(237, 109, 61, 0.2);
+            z-index: 1001;
+        }
+
+        /* 吹き出しのしっぽ（枠線） */
+        #speech-bubble::after {
+            content: '';
+            position: absolute;
+            bottom: -10px;
+            left: 50%;
+            transform: translateX(-50%);
+            border-width: 10px 10px 0;
+            border-style: solid;
+            border-color: #ed6d3d transparent transparent transparent;
+        }
+        
+        /* 吹き出しのしっぽ（白塗り） */
+        #speech-bubble::before {
+            content: '';
+            position: absolute;
+            bottom: -6px;
+            left: 50%;
+            transform: translateX(-50%);
+            border-width: 7px 7px 0;
+            border-style: solid;
+            border-color: #fff transparent transparent transparent;
+            z-index: 1;
         }
     </style>
 </head>
@@ -108,17 +189,116 @@
             <span class="icon">👜</span> 持ち物リスト
         </a>
 
-        <a href="#" class="menu-btn" style="opacity: 0.5; cursor: default;">
-            <span class="icon">📅</span> スケジュール (準備中)
+        <a href="schedule.html" class="menu-btn">
+            <span class="icon">📅</span> スケジュール
         </a>
+
         <a href="#" class="menu-btn" style="opacity: 0.5; cursor: default;">
             <span class="icon">🗺️</span> マップ (準備中)
         </a>
+    </div>
+
+    <div id="chara-container" onclick="talk()">
+        <div id="speech-bubble"></div>
+        <img id="chara-img" src="images/chara.png" alt="案内キャラ">
     </div>
 
     <footer>
         Have a nice trip!
     </footer>
 
+    <script>
+        // === 設定エリア ===
+        let tapCount = 0;
+        let isTyping = false;
+        let typingTimer = null;
+
+        // セリフ設定
+        const normalTexts = [
+            "京都へようこそ！",
+            "上のメニューから\nスケジュールを確認できるよ。",
+            "準備はバッチリ？",
+            "タップしてくれてありがとう。",
+            "楽しみだね！",
+            "僕をタップしても\n何も出ないよ...多分。",
+            "お土産は何を買う予定？"
+        ];
+
+        const dateTexts = {
+            "11/30": ["ついに当日だね！\n気をつけていこう！", "新幹線の時間は大丈夫？"],
+            "12/1": ["旅行2日目！\n今日も楽しもう！", "足、痛くない？"]
+        };
+
+        const timeTexts = {
+            morning: ["おはよう！\n早起きだね。", "朝ごはんは食べた？"],
+            night:   ["もう夜だよ。\n明日に備えて寝よう。", "……Zzz"]
+        };
+
+        const annoyedTexts = [
+            "……。",
+            "そんなに触らないで。",
+            "しつこいなあ。",
+            "もしかして、\nヒマなの？",
+            "ケツイがみなぎってきた。"
+        ];
+
+        // === 機能エリア ===
+        function talk() {
+            const bubble = document.getElementById('speech-bubble');
+            
+            if (isTyping) {
+                clearTimeout(typingTimer);
+                isTyping = false;
+            }
+
+            tapCount++;
+            let message = "";
+            const now = new Date();
+            const dateStr = (now.getMonth() + 1) + "/" + now.getDate();
+            const hour = now.getHours();
+
+            // 条件分岐
+            if (tapCount > 10 && Math.random() < 0.3) {
+                 message = pickRandom(annoyedTexts);
+            } else if (dateTexts[dateStr]) {
+                message = pickRandom(dateTexts[dateStr]);
+            } else if (hour >= 5 && hour <= 9) {
+                message = pickRandom(timeTexts.morning);
+            } else if (hour >= 22 || hour <= 4) {
+                message = pickRandom(timeTexts.night);
+            } else {
+                message = pickRandom(normalTexts);
+            }
+
+            // 表示開始
+            bubble.style.display = "block";
+            bubble.innerHTML = "";
+            typeWriter(message, bubble, 0);
+        }
+
+        function pickRandom(array) {
+            return array[Math.floor(Math.random() * array.length)];
+        }
+
+        function typeWriter(text, element, index) {
+            isTyping = true;
+            
+            if (text.charAt(index) === "\n") {
+                element.innerHTML += "<br>";
+            } else {
+                element.innerHTML += text.charAt(index);
+            }
+
+            if (index < text.length - 1) {
+                const speed = 50 + Math.random() * 50; 
+                typingTimer = setTimeout(() => {
+                    typeWriter(text, element, index + 1);
+                }, speed);
+            } else {
+                isTyping = false;
+                // 自動で消えるタイマーは削除済み（出しっぱなし）
+            }
+        }
+    </script>
 </body>
 </html>
