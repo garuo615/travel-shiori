@@ -45,6 +45,7 @@
             margin-left: 30px;
             border-left: 3px solid var(--primary-color);
             padding-left: 20px;
+            min-height: 200px;
         }
 
         .memory-item {
@@ -144,7 +145,7 @@
             box-sizing: border-box;
             z-index: 100;
             display: flex;
-            flex-direction: column; /* 縦並びに変更（日付欄を入れるため） */
+            flex-direction: column; 
             gap: 10px;
         }
 
@@ -180,7 +181,7 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            flex-shrink: 0; /* 縮まないように */
+            flex-shrink: 0;
         }
 
         #commentInput {
@@ -205,7 +206,7 @@
 
         /* --- 編集モーダル（ポップアップ） --- */
         .modal {
-            display: none; /* 最初は隠す */
+            display: none;
             position: fixed;
             top: 0;
             left: 0;
@@ -327,17 +328,27 @@
     </div>
 
     <script>
-        // バージョンを変えてデータをリセット（旧データとの競合回避）
-        const STORAGE_KEY = 'travel_memories_v2';
+        // === IndexedDB 設定エリア ===
+        const DB_NAME = 'TravelShioriDB';
+        const DB_VERSION = 1;
+        const STORE_NAME = 'memories';
+        let db;
 
-        document.addEventListener('DOMContentLoaded', () => {
-            // 投稿フォームの日付欄に、初期値として「現在時刻」をセット
+        document.addEventListener('DOMContentLoaded', async () => {
+            // 現在時刻をセット
             document.getElementById('dateInput').value = getNowForInput();
             
-            loadMemories();
+            // DB初期化後にデータを読み込む
+            try {
+                await initDB();
+                loadMemories();
+            } catch (e) {
+                console.error("DB Error:", e);
+                alert("データベースの起動に失敗しました。");
+            }
         });
 
-        // カメラアイコンの色変化（選択時）
+        // カメラアイコンの色変化
         document.getElementById('fileInput').addEventListener('change', function() {
             const btn = document.querySelector('.camera-icon');
             if (this.files && this.files[0]) {
@@ -345,6 +356,64 @@
                 btn.style.color = 'white';
             }
         });
+
+        // --- IndexedDB 初期化 ---
+        function initDB() {
+            return new Promise((resolve, reject) => {
+                const request = indexedDB.open(DB_NAME, DB_VERSION);
+                
+                request.onupgradeneeded = (event) => {
+                    db = event.target.result;
+                    if (!db.objectStoreNames.contains(STORE_NAME)) {
+                        // idをキーにして保存する設定
+                        db.createObjectStore(STORE_NAME, { keyPath: 'id' });
+                    }
+                };
+
+                request.onsuccess = (event) => {
+                    db = event.target.result;
+                    resolve(db);
+                };
+
+                request.onerror = (event) => {
+                    reject(event.target.error);
+                };
+            });
+        }
+
+        // --- DB操作用 関数 ---
+        function saveToDB(item) {
+            return new Promise((resolve, reject) => {
+                const transaction = db.transaction([STORE_NAME], 'readwrite');
+                const store = transaction.objectStore(STORE_NAME);
+                const request = store.put(item); // putは「あれば更新、なければ追加」
+                
+                request.onsuccess = () => resolve();
+                request.onerror = (e) => reject(e.target.error);
+            });
+        }
+
+        function deleteFromDB(id) {
+            return new Promise((resolve, reject) => {
+                const transaction = db.transaction([STORE_NAME], 'readwrite');
+                const store = transaction.objectStore(STORE_NAME);
+                const request = store.delete(id);
+                
+                request.onsuccess = () => resolve();
+                request.onerror = (e) => reject(e.target.error);
+            });
+        }
+
+        function getAllFromDB() {
+            return new Promise((resolve, reject) => {
+                const transaction = db.transaction([STORE_NAME], 'readonly');
+                const store = transaction.objectStore(STORE_NAME);
+                const request = store.getAll();
+                
+                request.onsuccess = () => resolve(request.result);
+                request.onerror = (e) => reject(e.target.error);
+            });
+        }
 
         // --- 1. 投稿機能 ---
         async function addMemory() {
@@ -354,7 +423,7 @@
             
             const file = fileInput.files[0];
             const comment = commentInput.value;
-            const dateVal = dateInput.value; // "2025-12-24T14:30" 形式
+            const dateVal = dateInput.value;
 
             if (!file && !comment) {
                 alert("写真かコメントを入力してください");
@@ -376,49 +445,41 @@
             }
 
             const newMemory = {
-                id: Date.now(),
-                timestamp: dateVal, // 日時をそのまま保存
+                id: Date.now(), // ユニークID
+                timestamp: dateVal,
                 image: imageData,
                 comment: comment
             };
 
-            const memories = getMemories();
-            memories.push(newMemory);
-            
-            // 保存・並び替え・表示
-            saveAndRender(memories);
+            // DBに保存
+            try {
+                await saveToDB(newMemory);
+                loadMemories(); // 再描画
+            } catch (e) {
+                alert("保存に失敗しました");
+                console.error(e);
+            }
 
             // フォームリセット
             fileInput.value = "";
             commentInput.value = "";
-            // 日付は今の時間にリセットしておく
             dateInput.value = getNowForInput();
             document.querySelector('.camera-icon').style.backgroundColor = 'transparent';
             document.querySelector('.camera-icon').style.color = '#ed6d3d';
         }
 
         // --- 2. 表示機能（自動ソート付き） ---
-        function loadMemories() {
-            const memories = getMemories();
-            renderMemories(memories);
-        }
-
-        function getMemories() {
-            const savedData = localStorage.getItem(STORAGE_KEY);
-            return savedData ? JSON.parse(savedData) : [];
-        }
-
-        function saveAndRender(memories) {
-            // ★重要：日付順（古い順）に並び替える
-            memories.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
-
+        async function loadMemories() {
             try {
-                localStorage.setItem(STORAGE_KEY, JSON.stringify(memories));
+                let memories = await getAllFromDB();
+                
+                // 日付順（古い順）に並び替え
+                memories.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+                
+                renderMemories(memories);
             } catch (e) {
-                alert("容量がいっぱいです。古い写真を削除してください。");
-                return;
+                console.error("Load Error:", e);
             }
-            renderMemories(memories);
         }
 
         function renderMemories(memories) {
@@ -429,7 +490,7 @@
                 const div = document.createElement('div');
                 div.className = 'memory-item';
 
-                // 日付の整形 (例: 12/24 14:30)
+                // 日付整形
                 const dateObj = new Date(item.timestamp);
                 const dateStr = `${dateObj.getMonth() + 1}/${dateObj.getDate()} ${String(dateObj.getHours()).padStart(2, '0')}:${String(dateObj.getMinutes()).padStart(2, '0')}`;
 
@@ -453,26 +514,18 @@
                 div.innerHTML = html;
                 list.appendChild(div);
             });
-            
-            // 最新が見えるように一番下へ
-            // window.scrollTo(0, document.body.scrollHeight); 
-            // ↑編集時にもスクロールされるとウザいので、今回は自動スクロールはオフにします
         }
 
         // --- 3. 編集機能 ---
-        
-        // モーダルを開く
-        function openEditModal(id) {
-            const memories = getMemories();
+        async function openEditModal(id) {
+            const memories = await getAllFromDB();
             const item = memories.find(m => m.id === id);
             if (!item) return;
 
-            // 編集フォームに今の値をセット
             document.getElementById('editId').value = item.id;
             document.getElementById('editDateInput').value = item.timestamp;
             document.getElementById('editCommentInput').value = item.comment;
             
-            // 画像プレビュー
             const preview = document.getElementById('editPreview');
             if (item.image) {
                 preview.src = item.image;
@@ -481,19 +534,14 @@
                 preview.style.display = 'none';
             }
             
-            // ファイル入力はリセット
             document.getElementById('editFileInput').value = "";
-
-            // モーダル表示
             document.getElementById('editModal').style.display = 'flex';
         }
 
-        // モーダルを閉じる
         function closeModal() {
             document.getElementById('editModal').style.display = 'none';
         }
 
-        // 編集内容を保存（更新）
         async function saveEdit() {
             const id = Number(document.getElementById('editId').value);
             const dateVal = document.getElementById('editDateInput').value;
@@ -505,12 +553,12 @@
                 return;
             }
 
-            const memories = getMemories();
-            const index = memories.findIndex(m => m.id === id);
-            if (index === -1) return;
+            // DBから現在のデータを取得
+            const memories = await getAllFromDB();
+            const originalItem = memories.find(m => m.id === id);
+            if (!originalItem) return;
 
-            // 新しい画像が選ばれていれば圧縮、なければ元の画像のまま
-            let newImage = memories[index].image;
+            let newImage = originalItem.image;
             if (fileInput.files && fileInput.files[0]) {
                 try {
                     newImage = await compressImage(fileInput.files[0]);
@@ -520,34 +568,42 @@
                 }
             }
 
-            // データ更新
-            memories[index].timestamp = dateVal;
-            memories[index].comment = commentVal;
-            memories[index].image = newImage;
+            // 更新データ作成
+            const updatedItem = {
+                id: id,
+                timestamp: dateVal,
+                image: newImage,
+                comment: commentVal
+            };
 
-            // 保存・並び替え（日付が変わった場合移動する）・再表示
-            saveAndRender(memories);
-            closeModal();
+            // 上書き保存
+            try {
+                await saveToDB(updatedItem);
+                loadMemories();
+                closeModal();
+            } catch (e) {
+                alert("更新に失敗しました");
+            }
         }
 
         // --- 4. 削除機能 ---
-        function deleteMemory(id) {
+        async function deleteMemory(id) {
             if (!confirm("本当に削除しますか？")) return;
-            let memories = getMemories();
-            memories = memories.filter(m => m.id !== id);
-            saveAndRender(memories);
+            try {
+                await deleteFromDB(id);
+                loadMemories();
+            } catch (e) {
+                alert("削除に失敗しました");
+            }
         }
 
         // --- 便利関数 ---
-
-        // input[type="datetime-local"] 用に現在時刻を整形する (YYYY-MM-DDTHH:mm)
         function getNowForInput() {
             const now = new Date();
-            now.setMinutes(now.getMinutes() - now.getTimezoneOffset()); // ローカル時間に補正
+            now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
             return now.toISOString().slice(0, 16);
         }
 
-        // 画像圧縮関数
         function compressImage(file) {
             return new Promise((resolve, reject) => {
                 const reader = new FileReader();
@@ -557,7 +613,7 @@
                     img.src = event.target.result;
                     img.onload = () => {
                         const canvas = document.createElement('canvas');
-                        const MAX_SIZE = 800; // 少し画質向上
+                        const MAX_SIZE = 800; // 圧縮設定
                         let width = img.width;
                         let height = img.height;
                         if (width > height) {
