@@ -7,10 +7,9 @@
     <style>
         /* 京都・滋賀テーマ */
         :root {
-            --primary-color: #ed6d3d; /* 深いオレンジ */
-            --bg-color: #fdfcf8;      /* 和紙っぽい白 */
-            --text-color: #4a3b32;    /* 焦げ茶 */
-            --accent-gray: #eee;
+            --primary-color: #ed6d3d;
+            --bg-color: #fdfcf8;
+            --text-color: #4a3b32;
         }
 
         body {
@@ -22,14 +21,35 @@
             color: var(--text-color);
         }
         
-        h1 {
+        /* ヘッダー周りのデザイン（ホームボタン追加） */
+        header {
+            position: relative; /* ボタンを固定するために必要 */
             text-align: center;
+            margin-bottom: 30px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid var(--primary-color);
+        }
+
+        h1 {
             font-size: 22px;
             color: var(--primary-color);
-            border-bottom: 2px solid var(--primary-color);
-            padding-bottom: 10px;
-            margin-bottom: 30px;
             font-family: "Hiragino Mincho ProN", serif;
+            margin: 0;
+            padding-top: 5px; /* ボタンとのバランス調整 */
+        }
+
+        /* 🏠 ホームボタン */
+        .home-btn {
+            position: absolute;
+            left: 0;
+            top: 50%;
+            transform: translateY(-50%); /* 上下の真ん中に配置 */
+            text-decoration: none;
+            font-size: 24px;
+            line-height: 1;
+        }
+        .home-btn:active {
+            transform: translateY(-50%) scale(0.9);
         }
 
         /* 入力エリア */
@@ -92,17 +112,15 @@
         input[type="checkbox"] {
             transform: scale(1.3);
             margin-right: 15px;
-            accent-color: var(--primary-color); /* チェックの色もオレンジに */
+            accent-color: var(--primary-color);
             cursor: pointer;
         }
         
-        /* チェック済みのスタイル */
         .checked-text {
             text-decoration: line-through;
             color: #aaa;
         }
 
-        /* 削除ボタン */
         .delete-btn {
             background-color: transparent;
             color: #ccc;
@@ -135,7 +153,10 @@
     </style>
 </head>
 <body>
-    <h1>👜 持ち物リスト</h1>
+    <header>
+        <a href="index.html" class="home-btn">🏠</a>
+        <h1>👜 持ち物リスト</h1>
+    </header>
 
     <div class="input-area">
         <input type="text" id="newItem" placeholder="追加する持ち物を入力">

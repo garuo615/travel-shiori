@@ -22,11 +22,34 @@
             color: var(--text-color);
         }
 
-        h1 {
+        /* ヘッダー周りのデザイン（ホームボタン追加） */
+        header {
+            position: relative;
             text-align: center;
-            color: var(--primary-color);
-            font-size: 24px;
             margin-bottom: 40px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid var(--primary-color);
+        }
+
+        h1 {
+            font-size: 24px;
+            color: var(--primary-color);
+            margin: 0;
+            padding-top: 5px;
+        }
+
+        /* 🏠 ホームボタン */
+        .home-btn {
+            position: absolute;
+            left: 0;
+            top: 50%;
+            transform: translateY(-50%);
+            text-decoration: none;
+            font-size: 24px;
+            line-height: 1;
+        }
+        .home-btn:active {
+            transform: translateY(-50%) scale(0.9);
         }
 
         .timeline {
@@ -43,7 +66,6 @@
             transition: all 0.5s ease;
         }
 
-        /* タイムラインの丸 */
         .event::before {
             content: '';
             position: absolute;
@@ -57,7 +79,6 @@
             z-index: 1;
         }
 
-        /* 時間の表示 */
         .time {
             font-family: sans-serif;
             font-weight: bold;
@@ -66,27 +87,18 @@
             margin-bottom: 5px;
         }
 
-        /* --- ロックされている時（Coming Soon）のデザイン --- */
+        /* ロック中 */
         .event.locked .title {
             color: var(--locked-color);
             font-style: italic;
             font-family: sans-serif;
             letter-spacing: 2px;
         }
-        
-        .event.locked .desc {
-            display: none; /* 中身は隠す */
-        }
+        .event.locked .desc { display: none; }
+        .event.locked::before { border-color: var(--locked-color); }
+        .event.locked .time { color: var(--locked-color); }
 
-        .event.locked::before {
-            border-color: var(--locked-color); /* 丸の色もグレーに */
-        }
-        
-        .event.locked .time {
-            color: var(--locked-color); /* 時間の色もグレーに */
-        }
-
-        /* --- 開放された時（通常）のデザイン --- */
+        /* 開放時 */
         .title {
             font-size: 18px;
             font-weight: bold;
@@ -113,7 +125,6 @@
             font-family: sans-serif;
         }
 
-        /* デバッグ用エリア（本番は消してOK） */
         #debug-area {
             margin-top: 50px;
             padding: 10px;
@@ -126,17 +137,18 @@
 </head>
 <body>
 
-    <h1>📅 1日目の予定</h1>
+    <header>
+        <a href="index.html" class="home-btn">🏠</a>
+        <h1>📅 1日目の予定</h1>
+    </header>
 
     <div class="timeline">
-        
         <div class="event" data-unlock="2023-11-29T00:00">
             <div class="time">10:00</div>
             <div class="title">京都駅 集合</div>
             <div class="desc">
                 ついに旅行スタート！<br>
-                中央改札口（京都タワーが見える方）で待ち合わせ。<br>
-                新幹線の切符を忘れずに。
+                中央改札口（京都タワーが見える方）で待ち合わせ。
             </div>
         </div>
 
@@ -145,8 +157,7 @@
             <div class="title">清水寺へGO</div>
             <div class="desc">
                 まずは定番スポットへ。<br>
-                バス停「五条坂」から歩きます。<br>
-                お昼は近くの湯豆腐屋さんを予約済み。
+                バス停「五条坂」から歩きます。
             </div>
         </div>
 
@@ -155,8 +166,7 @@
             <div class="title">ホテル チェックイン</div>
             <div class="desc">
                 歩き疲れたので一旦休憩。<br>
-                ホテル：ザ・ゲートホテル京都高瀬川<br>
-                ロビーからの景色が良いらしい！
+                ホテル：ザ・ゲートホテル京都高瀬川
             </div>
         </div>
 
@@ -165,24 +175,22 @@
             <div class="title">✨ サプライズディナー ✨</div>
             <div class="desc">
                 今夜はちょっと贅沢に。<br>
-                鴨川納涼床のお店を予約しました！<br>
-                <a href="#" style="color:#ed6d3d;">Googleマップはこちら</a>
+                鴨川納涼床のお店を予約しました！
             </div>
         </div>
-
     </div>
 
     <a href="index.html" class="back-link">＜ 表紙に戻る</a>
 
     <div id="debug-area">
         <p>【動作確認モード】時間を操作してロック解除を試せます</p>
-        <button onclick="setFakeTime('2025-11-30T09:00')">朝9時（まだロック中）</button>
-        <button onclick="setFakeTime('2025-11-30T12:00')">昼12時（2つ目まで公開）</button>
-        <button onclick="setFakeTime('2025-11-30T19:00')">夜7時（全公開）</button>
+        <button onclick="setFakeTime('2025-11-30T09:00')">朝9時</button>
+        <button onclick="setFakeTime('2025-11-30T12:00')">昼12時</button>
+        <button onclick="setFakeTime('2025-11-30T19:00')">夜7時</button>
         <button onclick="resetTime()">現在時刻に戻す</button>
     </div>
+
     <script>
-        // グローバル変数として現在時刻を管理（テスト用）
         let currentTimeOverride = null;
 
         document.addEventListener('DOMContentLoaded', () => {
@@ -190,40 +198,31 @@
         });
 
         function updateSchedule() {
-            // 現在時刻を取得（テスト用の時間が設定されていればそれを使う）
             const now = currentTimeOverride ? new Date(currentTimeOverride) : new Date();
-            
             const events = document.querySelectorAll('.event');
 
             events.forEach(event => {
-                // HTMLに書かれた公開時間を取得
                 const unlockTimeStr = event.getAttribute('data-unlock');
-                if (!unlockTimeStr) return; // 設定がなければ無視
+                if (!unlockTimeStr) return;
 
                 const unlockTime = new Date(unlockTimeStr);
-                
-                // タイトル要素を取得（中身を書き換えるため）
                 const titleEl = event.querySelector('.title');
-                // 元のタイトルを保存しておく（一回だけ）
+                
                 if (!event.getAttribute('data-original-title')) {
                     event.setAttribute('data-original-title', titleEl.textContent);
                 }
                 const originalTitle = event.getAttribute('data-original-title');
 
-                // 時間判定
                 if (now >= unlockTime) {
-                    // ★公開状態★
                     event.classList.remove('locked');
-                    titleEl.textContent = originalTitle; // タイトルを元に戻す
+                    titleEl.textContent = originalTitle;
                 } else {
-                    // ★ロック状態（Coming Soon）★
                     event.classList.add('locked');
-                    titleEl.textContent = "Coming Soon..."; // タイトルを隠す
+                    titleEl.textContent = "Coming Soon...";
                 }
             });
         }
 
-        /* --- 以下、テスト用の便利機能 --- */
         function setFakeTime(timeStr) {
             currentTimeOverride = timeStr;
             alert(`現在時刻を仮想的に【${timeStr}】にしました`);
@@ -236,6 +235,5 @@
             updateSchedule();
         }
     </script>
-
 </body>
 </html>
