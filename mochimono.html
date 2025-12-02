@@ -38,16 +38,29 @@
             padding-top: 5px; /* ボタンとのバランス調整 */
         }
 
-        /* 🏠 ホームボタン */
+        /* 🏠 ホームボタン（画像版） */
         .home-btn {
             position: absolute;
-            left: 0;
+            left: 20px;      /* 左端からの距離 */
             top: 50%;
-            transform: translateY(-50%); /* 上下の真ん中に配置 */
-            text-decoration: none;
-            font-size: 24px;
-            line-height: 1;
+            transform: translateY(-50%); /* 上下の真ん中 */
+            
+            width: 28px;     /* アイコンの大きさ */
+            height: 28px;
+            
+            display: block;
+            transition: transform 0.1s;
         }
+        
+        /* 画像の色を白くする設定 */
+        .home-btn img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            /* 黒いアイコンを白く反転させる魔法のコード */
+            
+        }
+
         .home-btn:active {
             transform: translateY(-50%) scale(0.9);
         }
@@ -154,7 +167,9 @@
 </head>
 <body>
     <header>
-        <a href="index.html" class="home-btn">🏠</a>
+        <a href="index.html" class="home-btn">
+            <img src="images/home.png" alt="ホーム">
+        </a>
         <h1>👜 持ち物リスト</h1>
     </header>
 
