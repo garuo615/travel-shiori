@@ -1,0 +1,600 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>旅の思い出アルバム</title>
+    <style>
+        /* 京都・滋賀テーマ */
+        :root {
+            --primary-color: #ed6d3d;
+            --bg-color: #fdfcf8;
+            --text-color: #4a3b32;
+            --overlay-color: rgba(0, 0, 0, 0.6);
+        }
+
+        body {
+            font-family: "Hiragino Mincho ProN", "Yu Mincho", serif;
+            margin: 0;
+            padding: 0;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            padding-bottom: 140px; /* 入力エリアの分だけ余白 */
+        }
+
+        header {
+            text-align: center;
+            padding: 20px;
+            background-color: var(--primary-color);
+            color: white;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            position: sticky;
+            top: 0;
+            z-index: 50;
+        }
+        
+        h1 {
+            margin: 0;
+            font-size: 20px;
+        }
+
+        /* タイムラインエリア */
+        .timeline {
+            position: relative;
+            margin: 20px;
+            margin-left: 30px;
+            border-left: 3px solid var(--primary-color);
+            padding-left: 20px;
+        }
+
+        .memory-item {
+            position: relative;
+            margin-bottom: 40px;
+            background: white;
+            border-radius: 10px;
+            padding: 15px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            animation: fadeIn 0.5s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* タイムラインの丸 */
+        .memory-item::before {
+            content: '';
+            position: absolute;
+            left: -29px;
+            top: 15px;
+            width: 15px;
+            height: 15px;
+            background-color: white;
+            border: 3px solid var(--primary-color);
+            border-radius: 50%;
+        }
+
+        /* ヘッダー部分（日時・操作ボタン） */
+        .item-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 5px;
+        }
+
+        .time {
+            font-family: sans-serif;
+            font-weight: bold;
+            color: var(--primary-color);
+            font-size: 16px;
+        }
+
+        .actions {
+            display: flex;
+            gap: 10px;
+        }
+
+        .action-btn {
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-size: 18px;
+            padding: 0;
+            color: #ccc;
+            transition: color 0.2s;
+        }
+        .edit-btn:hover { color: #007bff; }
+        .delete-btn:hover { color: #ff4d4d; }
+
+        .photo {
+            width: 100%;
+            border-radius: 5px;
+            margin: 5px 0 10px;
+            display: block;
+            object-fit: cover;
+        }
+
+        .comment {
+            font-size: 15px;
+            line-height: 1.5;
+            white-space: pre-wrap;
+        }
+
+        .back-link {
+            display: block;
+            text-align: center;
+            margin-bottom: 20px;
+            color: var(--primary-color);
+            text-decoration: none;
+            font-weight: bold;
+        }
+
+        /* --- 投稿フォーム（画面下部固定） --- */
+        .post-area {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            background: white;
+            padding: 10px 15px 15px; /* 上・横・下 */
+            box-shadow: 0 -2px 10px rgba(0,0,0,0.1);
+            box-sizing: border-box;
+            z-index: 100;
+            display: flex;
+            flex-direction: column; /* 縦並びに変更（日付欄を入れるため） */
+            gap: 10px;
+        }
+
+        .input-row {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            width: 100%;
+        }
+
+        /* 日付入力欄 */
+        #dateInput {
+            font-size: 14px;
+            padding: 5px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            background: #f9f9f9;
+            width: 100%;
+            font-family: sans-serif;
+        }
+
+        /* ファイル選択ボタン（カメラ） */
+        #fileInput { display: none; }
+        .camera-icon {
+            font-size: 24px;
+            color: var(--primary-color);
+            cursor: pointer;
+            padding: 5px;
+            border: 2px solid var(--primary-color);
+            border-radius: 50%;
+            width: 36px;
+            height: 36px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0; /* 縮まないように */
+        }
+
+        #commentInput {
+            flex-grow: 1;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 20px;
+            font-size: 16px;
+            outline: none;
+        }
+
+        #sendBtn {
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 20px;
+            font-weight: bold;
+            cursor: pointer;
+            white-space: nowrap;
+        }
+
+        /* --- 編集モーダル（ポップアップ） --- */
+        .modal {
+            display: none; /* 最初は隠す */
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: var(--overlay-color);
+            z-index: 2000;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal-content {
+            background-color: white;
+            width: 85%;
+            max-width: 400px;
+            padding: 20px;
+            border-radius: 15px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+            text-align: left;
+        }
+
+        .modal-content h2 {
+            margin-top: 0;
+            color: var(--primary-color);
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .modal-group {
+            margin-bottom: 15px;
+        }
+        .modal-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+            font-size: 14px;
+        }
+        
+        .modal-preview-img {
+            width: 100%;
+            height: 150px;
+            object-fit: cover;
+            border-radius: 5px;
+            border: 1px solid #ddd;
+            margin-bottom: 10px;
+        }
+
+        .modal-buttons {
+            display: flex;
+            justify-content: space-between;
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        .modal-btn {
+            flex: 1;
+            padding: 10px;
+            border: none;
+            border-radius: 5px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        .modal-save { background-color: var(--primary-color); color: white; }
+        .modal-cancel { background-color: #ccc; color: #333; }
+
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>📸 旅の思い出アルバム</h1>
+    </header>
+
+    <div class="timeline" id="memoryList">
+        </div>
+
+    <a href="index.html" class="back-link">＜ 表紙に戻る</a>
+
+    <div class="post-area">
+        <input type="datetime-local" id="dateInput">
+
+        <div class="input-row">
+            <label for="fileInput" class="camera-icon">📷</label>
+            <input type="file" id="fileInput" accept="image/*">
+
+            <input type="text" id="commentInput" placeholder="思い出を一言...">
+
+            <button id="sendBtn" onclick="addMemory()">保存</button>
+        </div>
+    </div>
+
+    <div id="editModal" class="modal">
+        <div class="modal-content">
+            <h2>思い出を編集</h2>
+            
+            <input type="hidden" id="editId">
+
+            <div class="modal-group">
+                <label>日時</label>
+                <input type="datetime-local" id="editDateInput" style="width: 100%; padding: 8px; box-sizing: border-box;">
+            </div>
+
+            <div class="modal-group">
+                <label>写真 (変更する場合のみ選択)</label>
+                <img id="editPreview" class="modal-preview-img">
+                <input type="file" id="editFileInput" accept="image/*">
+            </div>
+
+            <div class="modal-group">
+                <label>コメント</label>
+                <input type="text" id="editCommentInput" style="width: 100%; padding: 8px; box-sizing: border-box;">
+            </div>
+
+            <div class="modal-buttons">
+                <button class="modal-btn modal-cancel" onclick="closeModal()">キャンセル</button>
+                <button class="modal-btn modal-save" onclick="saveEdit()">更新</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // バージョンを変えてデータをリセット（旧データとの競合回避）
+        const STORAGE_KEY = 'travel_memories_v2';
+
+        document.addEventListener('DOMContentLoaded', () => {
+            // 投稿フォームの日付欄に、初期値として「現在時刻」をセット
+            document.getElementById('dateInput').value = getNowForInput();
+            
+            loadMemories();
+        });
+
+        // カメラアイコンの色変化（選択時）
+        document.getElementById('fileInput').addEventListener('change', function() {
+            const btn = document.querySelector('.camera-icon');
+            if (this.files && this.files[0]) {
+                btn.style.backgroundColor = '#ed6d3d';
+                btn.style.color = 'white';
+            }
+        });
+
+        // --- 1. 投稿機能 ---
+        async function addMemory() {
+            const dateInput = document.getElementById('dateInput');
+            const fileInput = document.getElementById('fileInput');
+            const commentInput = document.getElementById('commentInput');
+            
+            const file = fileInput.files[0];
+            const comment = commentInput.value;
+            const dateVal = dateInput.value; // "2025-12-24T14:30" 形式
+
+            if (!file && !comment) {
+                alert("写真かコメントを入力してください");
+                return;
+            }
+            if (!dateVal) {
+                alert("日時を入力してください");
+                return;
+            }
+
+            let imageData = null;
+            if (file) {
+                try {
+                    imageData = await compressImage(file);
+                } catch (e) {
+                    alert("画像の処理に失敗しました");
+                    return;
+                }
+            }
+
+            const newMemory = {
+                id: Date.now(),
+                timestamp: dateVal, // 日時をそのまま保存
+                image: imageData,
+                comment: comment
+            };
+
+            const memories = getMemories();
+            memories.push(newMemory);
+            
+            // 保存・並び替え・表示
+            saveAndRender(memories);
+
+            // フォームリセット
+            fileInput.value = "";
+            commentInput.value = "";
+            // 日付は今の時間にリセットしておく
+            dateInput.value = getNowForInput();
+            document.querySelector('.camera-icon').style.backgroundColor = 'transparent';
+            document.querySelector('.camera-icon').style.color = '#ed6d3d';
+        }
+
+        // --- 2. 表示機能（自動ソート付き） ---
+        function loadMemories() {
+            const memories = getMemories();
+            renderMemories(memories);
+        }
+
+        function getMemories() {
+            const savedData = localStorage.getItem(STORAGE_KEY);
+            return savedData ? JSON.parse(savedData) : [];
+        }
+
+        function saveAndRender(memories) {
+            // ★重要：日付順（古い順）に並び替える
+            memories.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+
+            try {
+                localStorage.setItem(STORAGE_KEY, JSON.stringify(memories));
+            } catch (e) {
+                alert("容量がいっぱいです。古い写真を削除してください。");
+                return;
+            }
+            renderMemories(memories);
+        }
+
+        function renderMemories(memories) {
+            const list = document.getElementById('memoryList');
+            list.innerHTML = "";
+
+            memories.forEach(item => {
+                const div = document.createElement('div');
+                div.className = 'memory-item';
+
+                // 日付の整形 (例: 12/24 14:30)
+                const dateObj = new Date(item.timestamp);
+                const dateStr = `${dateObj.getMonth() + 1}/${dateObj.getDate()} ${String(dateObj.getHours()).padStart(2, '0')}:${String(dateObj.getMinutes()).padStart(2, '0')}`;
+
+                let html = `
+                    <div class="item-header">
+                        <div class="time">${dateStr}</div>
+                        <div class="actions">
+                            <button class="action-btn edit-btn" onclick="openEditModal(${item.id})">✏️</button>
+                            <button class="action-btn delete-btn" onclick="deleteMemory(${item.id})">×</button>
+                        </div>
+                    </div>
+                `;
+
+                if (item.image) {
+                    html += `<img src="${item.image}" class="photo">`;
+                }
+                if (item.comment) {
+                    html += `<div class="comment">${escapeHtml(item.comment)}</div>`;
+                }
+
+                div.innerHTML = html;
+                list.appendChild(div);
+            });
+            
+            // 最新が見えるように一番下へ
+            // window.scrollTo(0, document.body.scrollHeight); 
+            // ↑編集時にもスクロールされるとウザいので、今回は自動スクロールはオフにします
+        }
+
+        // --- 3. 編集機能 ---
+        
+        // モーダルを開く
+        function openEditModal(id) {
+            const memories = getMemories();
+            const item = memories.find(m => m.id === id);
+            if (!item) return;
+
+            // 編集フォームに今の値をセット
+            document.getElementById('editId').value = item.id;
+            document.getElementById('editDateInput').value = item.timestamp;
+            document.getElementById('editCommentInput').value = item.comment;
+            
+            // 画像プレビュー
+            const preview = document.getElementById('editPreview');
+            if (item.image) {
+                preview.src = item.image;
+                preview.style.display = 'block';
+            } else {
+                preview.style.display = 'none';
+            }
+            
+            // ファイル入力はリセット
+            document.getElementById('editFileInput').value = "";
+
+            // モーダル表示
+            document.getElementById('editModal').style.display = 'flex';
+        }
+
+        // モーダルを閉じる
+        function closeModal() {
+            document.getElementById('editModal').style.display = 'none';
+        }
+
+        // 編集内容を保存（更新）
+        async function saveEdit() {
+            const id = Number(document.getElementById('editId').value);
+            const dateVal = document.getElementById('editDateInput').value;
+            const commentVal = document.getElementById('editCommentInput').value;
+            const fileInput = document.getElementById('editFileInput');
+
+            if (!dateVal) {
+                alert("日時を入力してください");
+                return;
+            }
+
+            const memories = getMemories();
+            const index = memories.findIndex(m => m.id === id);
+            if (index === -1) return;
+
+            // 新しい画像が選ばれていれば圧縮、なければ元の画像のまま
+            let newImage = memories[index].image;
+            if (fileInput.files && fileInput.files[0]) {
+                try {
+                    newImage = await compressImage(fileInput.files[0]);
+                } catch (e) {
+                    alert("画像の処理に失敗しました");
+                    return;
+                }
+            }
+
+            // データ更新
+            memories[index].timestamp = dateVal;
+            memories[index].comment = commentVal;
+            memories[index].image = newImage;
+
+            // 保存・並び替え（日付が変わった場合移動する）・再表示
+            saveAndRender(memories);
+            closeModal();
+        }
+
+        // --- 4. 削除機能 ---
+        function deleteMemory(id) {
+            if (!confirm("本当に削除しますか？")) return;
+            let memories = getMemories();
+            memories = memories.filter(m => m.id !== id);
+            saveAndRender(memories);
+        }
+
+        // --- 便利関数 ---
+
+        // input[type="datetime-local"] 用に現在時刻を整形する (YYYY-MM-DDTHH:mm)
+        function getNowForInput() {
+            const now = new Date();
+            now.setMinutes(now.getMinutes() - now.getTimezoneOffset()); // ローカル時間に補正
+            return now.toISOString().slice(0, 16);
+        }
+
+        // 画像圧縮関数
+        function compressImage(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.readAsDataURL(file);
+                reader.onload = (event) => {
+                    const img = new Image();
+                    img.src = event.target.result;
+                    img.onload = () => {
+                        const canvas = document.createElement('canvas');
+                        const MAX_SIZE = 800; // 少し画質向上
+                        let width = img.width;
+                        let height = img.height;
+                        if (width > height) {
+                            if (width > MAX_SIZE) {
+                                height *= MAX_SIZE / width;
+                                width = MAX_SIZE;
+                            }
+                        } else {
+                            if (height > MAX_SIZE) {
+                                width *= MAX_SIZE / height;
+                                height = MAX_SIZE;
+                            }
+                        }
+                        canvas.width = width;
+                        canvas.height = height;
+                        const ctx = canvas.getContext('2d');
+                        ctx.drawImage(img, 0, 0, width, height);
+                        resolve(canvas.toDataURL('image/jpeg', 0.8));
+                    };
+                    img.onerror = reject;
+                };
+                reader.onerror = reject;
+            });
+        }
+
+        function escapeHtml(str) {
+            if(!str) return "";
+            return str.replace(/[&<>"']/g, function(match) {
+                return {
+                    '&': '&amp;',
+                    '<': '&lt;',
+                    '>': '&gt;',
+                    '"': '&quot;',
+                    "'": '&#039;'
+                }[match];
+            });
+        }
+    </script>
+</body>
+</html>
