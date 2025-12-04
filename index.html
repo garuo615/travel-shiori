@@ -34,6 +34,7 @@
             border-bottom-left-radius: 30px;
             border-bottom-right-radius: 30px;
             box-shadow: 0 4px 10px rgba(237, 109, 61, 0.3);
+            /* ホームボタンを消したので position: relative は不要ですが、そのままでも問題ありません */
         }
         
         h1 {
@@ -52,7 +53,7 @@
 
         /* メインメニュー */
         .menu {
-            padding: 40px 20px 20px; /* 下の余白を少し調整 */
+            padding: 40px 20px 20px;
             display: flex;
             flex-direction: column;
             gap: 20px;
@@ -93,7 +94,7 @@
             margin-top: 20px;
             font-size: 12px;
             color: #888;
-            padding-bottom: 40px;
+            padding-bottom: 20px;
             font-family: sans-serif;
         }
 
@@ -102,13 +103,12 @@
            ========================================= */
         
         #chara-container {
-            /* 画面固定(fixed)をやめて、ページの流れに沿って配置(relative) */
             position: relative; 
-            margin: 60px auto 20px; /* メニューとの間に60pxの隙間を空ける */
+            margin: 60px auto 20px; /* 上・左右・下 の余白 */
             width: 180px;           /* キャラの幅 */
             z-index: 10;
             cursor: pointer;
-            text-align: center;     /* 画像を中央寄せ */
+            text-align: center;
         }
 
         #chara-img {
@@ -173,6 +173,43 @@
             border-color: #fff transparent transparent transparent;
             z-index: 1;
         }
+
+        /* ▼▼▼ デバッグエリア（動作確認用） ▼▼▼ */
+        #debug-area {
+            background-color: #eee;
+            color: #333;
+            padding: 15px;
+            margin: 30px auto;
+            border-radius: 10px;
+            max-width: 90%;
+            font-family: sans-serif;
+            font-size: 14px;
+            text-align: center;
+            border: 2px dashed #999;
+        }
+
+        #debug-area h3 {
+            margin-top: 0;
+            font-size: 16px;
+        }
+
+        .debug-btn {
+            background: #fff;
+            border: 1px solid #ccc;
+            padding: 8px 12px;
+            margin: 5px;
+            cursor: pointer;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+        .debug-btn:hover {
+            background: #ddd;
+        }
+        .current-time-display {
+            font-weight: bold;
+            color: #ed6d3d;
+            margin-top: 10px;
+        }
     </style>
 </head>
 <body>
@@ -193,12 +230,12 @@
             <span class="icon">📅</span> スケジュール
         </a>
 
-        <a href="#" class="menu-btn" style="opacity: 0.5; cursor: default;">
-            <span class="icon">🗺️</span> マップ (準備中)
-        </a>
-
         <a href="memories.html" class="menu-btn">
             <span class="icon">📸</span> 思い出アルバム
+        </a>
+
+        <a href="#" class="menu-btn" style="opacity: 0.5; cursor: default;">
+            <span class="icon">🗺️</span> マップ (準備中)
         </a>
     </div>
 
@@ -211,13 +248,36 @@
         Have a nice trip!
     </footer>
 
+    <div id="debug-area">
+        <h3>🔧 動作確認モード</h3>
+        <p>時間を偽装して、キャラの反応テストができます</p>
+        
+        <button class="debug-btn" onclick="setFakeTime('2025-12-24T14:00')">🎄 1日目(12/24)</button>
+        <button class="debug-btn" onclick="setFakeTime('2025-12-25T14:00')">🎁 2日目(12/25)</button>
+        <br>
+        <button class="debug-btn" onclick="setFakeTime('2025-12-24T07:00')">☀️ 朝 (7:00)</button>
+        <button class="debug-btn" onclick="setFakeTime('2025-12-24T23:00')">🌙 夜 (23:00)</button>
+        <br>
+        <div style="margin-top:5px;">
+            <input type="datetime-local" id="manualDebugTime">
+            <button class="debug-btn" onclick="setManualTime()">適用</button>
+        </div>
+        
+        <button class="debug-btn" onclick="resetTime()" style="background:#ffcccc; margin-top:10px;">リセット（現在時刻に戻す）</button>
+        
+        <div class="current-time-display" id="debug-display">現在時刻: 通常モード</div>
+    </div>
+
     <script>
         // === 設定エリア ===
         let tapCount = 0;
         let isTyping = false;
         let typingTimer = null;
+        
+        // ★デバッグ用：時間を上書きする変数
+        let currentTimeOverride = null;
 
-        // セリフ設定
+        // 1. 通常のセリフ
         const normalTexts = [
             "京都へようこそ！",
             "上のメニューから\nスケジュールを確認できるよ。",
@@ -228,16 +288,27 @@
             "お土産は何を買う予定？"
         ];
 
+        // 2. 特定の日付（旅行当日）のセリフ
         const dateTexts = {
-            "11/30": ["ついに当日だね！\n気をつけていこう！", "新幹線の時間は大丈夫？"],
-            "12/1": ["旅行2日目！\n今日も楽しもう！", "足、痛くない？"]
+            "12/24": [
+                "ついに当日だね！\nメリークリスマス！",
+                "新幹線の時間は大丈夫？",
+                "今日はたくさん歩くよ～"
+            ],
+            "12/25": [
+                "旅行2日目！\n今日も楽しもう！",
+                "足、痛くない？",
+                "帰りたくないなぁ..."
+            ]
         };
 
+        // 3. 特定の時間帯のセリフ
         const timeTexts = {
             morning: ["おはよう！\n早起きだね。", "朝ごはんは食べた？"],
             night:   ["もう夜だよ。\n明日に備えて寝よう。", "……Zzz"]
         };
 
+        // 4. 連打された時のセリフ
         const annoyedTexts = [
             "……。",
             "そんなに触らないで。",
@@ -246,7 +317,8 @@
             "ケツイがみなぎってきた。"
         ];
 
-        // === 機能エリア ===
+        // === メイン機能 ===
+
         function talk() {
             const bubble = document.getElementById('speech-bubble');
             
@@ -257,28 +329,46 @@
 
             tapCount++;
             let message = "";
-            const now = new Date();
-            const dateStr = (now.getMonth() + 1) + "/" + now.getDate();
+
+            // ★重要：デバッグ時刻があればそれを使い、なければ現在時刻を使う
+            const now = currentTimeOverride ? new Date(currentTimeOverride) : new Date();
+            
+            const dateStr = (now.getMonth() + 1) + "/" + now.getDate(); // 例: "12/24"
             const hour = now.getHours();
 
-            // 条件分岐
+            // デバッグ表示の更新（確認用）
+            updateDebugDisplay(now);
+
+            // --- 条件分岐ロジック ---
+
+            // 優先度1: タップ連打（10回以上かつ30%の確率）
             if (tapCount > 10 && Math.random() < 0.3) {
                  message = pickRandom(annoyedTexts);
-            } else if (dateTexts[dateStr]) {
+            }
+            // 優先度2: 日付判定
+            else if (dateTexts[dateStr]) {
                 message = pickRandom(dateTexts[dateStr]);
-            } else if (hour >= 5 && hour <= 9) {
+            }
+            // 優先度3: 朝（5時〜9時）
+            else if (hour >= 5 && hour <= 9) {
                 message = pickRandom(timeTexts.morning);
-            } else if (hour >= 22 || hour <= 4) {
+            }
+            // 優先度4: 夜（22時〜4時）
+            else if (hour >= 22 || hour <= 4) {
                 message = pickRandom(timeTexts.night);
-            } else {
+            }
+            // それ以外: 通常
+            else {
                 message = pickRandom(normalTexts);
             }
 
-            // 表示開始
+            // 吹き出し表示
             bubble.style.display = "block";
             bubble.innerHTML = "";
             typeWriter(message, bubble, 0);
         }
+
+        // --- 補助関数 ---
 
         function pickRandom(array) {
             return array[Math.floor(Math.random() * array.length)];
@@ -286,7 +376,6 @@
 
         function typeWriter(text, element, index) {
             isTyping = true;
-            
             if (text.charAt(index) === "\n") {
                 element.innerHTML += "<br>";
             } else {
@@ -300,8 +389,37 @@
                 }, speed);
             } else {
                 isTyping = false;
-                // 自動で消えるタイマーは削除済み（出しっぱなし）
             }
+        }
+
+        // --- デバッグ用機能 ---
+
+        function setFakeTime(timeStr) {
+            currentTimeOverride = timeStr;
+            const fakeDate = new Date(timeStr);
+            alert(`現在時刻を【${timeStr}】に設定しました。\nキャラクターをタップして確認してください。`);
+            updateDebugDisplay(fakeDate);
+            
+            // タップ回数もリセットして反応しやすくする
+            tapCount = 0; 
+        }
+
+        function setManualTime() {
+            const val = document.getElementById('manualDebugTime').value;
+            if(val) setFakeTime(val);
+        }
+
+        function resetTime() {
+            currentTimeOverride = null;
+            alert("本来の現在時刻に戻しました。");
+            updateDebugDisplay(new Date());
+        }
+
+        function updateDebugDisplay(dateObj) {
+            const display = document.getElementById('debug-display');
+            const str = `${dateObj.getMonth()+1}/${dateObj.getDate()} ${dateObj.getHours()}:${String(dateObj.getMinutes()).padStart(2,'0')}`;
+            const status = currentTimeOverride ? "偽装中" : "通常";
+            display.innerText = `現在時刻(${status}): ${str}`;
         }
     </script>
 </body>
