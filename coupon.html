@@ -1,0 +1,476 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>スペシャルプレゼント🎁</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=DotGothic16&display=swap" rel="stylesheet">
+
+    <style>
+        /* テーマ設定 */
+        :root {
+            --primary-color: #ed6d3d;
+            --secondary-color: #ff69b4;
+            --bg-color: #fdfcf8;
+            --text-color: #4a3b32;
+            --paper-color: #fffbf0;
+        }
+
+        body {
+            font-family: "Hiragino Mincho ProN", "Yu Mincho", serif;
+            margin: 0;
+            padding: 0;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            text-align: center;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+
+        header {
+            background-color: var(--secondary-color);
+            color: white;
+            padding: 30px 20px;
+            border-bottom-left-radius: 20px;
+            border-bottom-right-radius: 20px;
+            box-shadow: 0 4px 10px rgba(255, 105, 180, 0.3);
+            position: relative;
+            display: flex; /* タイトルとボタンを横並びに調整 */
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* ★ホームボタン（画像）のデザイン */
+        .home-btn {
+            position: absolute;
+            top: 50%; /* 上下中央に配置 */
+            left: 20px;
+            transform: translateY(-50%); /* 上下中央の位置調整 */
+            display: block;
+            width: 40px; /* 画像の表示サイズ（お好みで調整してください） */
+            height: auto;
+            transition: transform 0.2s;
+        }
+        
+        /* 画像自体を枠に合わせる */
+        .home-btn img {
+            width: 100%;
+            height: auto;
+            display: block;
+        }
+
+        /* クリック時のアニメーション */
+        .home-btn:active {
+            transform: translateY(-50%) scale(0.8);
+        }
+        
+        h1 {
+            margin: 0;
+            font-size: 24px;
+            letter-spacing: 1px;
+            /* line-heightは削除してFlexboxで中央揃えにします */
+        }
+
+        .coupon-list {
+            padding: 30px 20px;
+            max-width: 500px;
+            margin: 0 auto;
+            display: flex;
+            flex-direction: column;
+            gap: 40px;
+        }
+
+        .ticket-card {
+            background: white;
+            border-radius: 15px;
+            overflow: hidden;
+            box-shadow: 0 8px 20px rgba(0,0,0,0.1);
+            position: relative;
+            transition: transform 0.2s, opacity 0.5s;
+            cursor: pointer;
+        }
+        
+        .ticket-card.used {
+            opacity: 0.7;
+            transform: scale(0.98);
+        }
+
+        .ticket-img {
+            width: 100%;
+            height: auto;
+            display: block;
+            border-bottom: 3px solid var(--secondary-color);
+            pointer-events: none;
+        }
+
+        /* スタンプ */
+        .used-stamp {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) rotate(-15deg);
+            font-family: 'DotGothic16', sans-serif;
+            font-size: 40px;
+            color: red;
+            border: 5px solid red;
+            padding: 10px 20px;
+            border-radius: 10px;
+            opacity: 0.8;
+            pointer-events: none;
+            display: none;
+            z-index: 10;
+            background-color: rgba(255, 255, 255, 0.8);
+        }
+        .ticket-card.used .used-stamp {
+            display: block;
+        }
+
+        .action-area {
+            padding: 20px;
+        }
+
+        .use-btn {
+            background-color: var(--secondary-color);
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 30px;
+            font-size: 18px;
+            font-weight: bold;
+            cursor: pointer;
+            box-shadow: 0 4px 0 rgba(219, 91, 155, 0.5);
+            transition: all 0.2s;
+            width: 100%;
+            font-family: sans-serif;
+        }
+
+        .use-btn:active {
+            transform: translateY(4px);
+            box-shadow: none;
+        }
+
+        .use-btn.disabled {
+            background-color: #ccc;
+            box-shadow: none;
+            color: #666;
+            cursor: default;
+            pointer-events: none;
+        }
+
+        /* 利用規約セクション */
+        .terms-container {
+            max-width: 500px;
+            margin: 40px auto 20px;
+            padding: 0 20px;
+            text-align: left;
+        }
+
+        .terms-toggle {
+            display: block;
+            width: 100%;
+            padding: 15px;
+            background-color: #fff;
+            border: 1px solid #ccc;
+            border-radius: 8px;
+            text-align: center;
+            font-size: 14px;
+            color: #666;
+            cursor: pointer;
+            transition: background-color 0.2s;
+            font-family: sans-serif;
+        }
+        .terms-toggle:hover {
+            background-color: #f9f9f9;
+        }
+        .terms-toggle::after {
+            content: ' ▼';
+            font-size: 10px;
+        }
+        .terms-toggle.open::after {
+            content: ' ▲';
+        }
+
+        .terms-content {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.5s ease-out;
+            margin-top: 10px;
+            background-color: var(--paper-color);
+            border: 3px double #a89f91;
+            padding: 0 20px;
+            font-family: "Hiragino Mincho ProN", "Yu Mincho", "MS PMincho", serif;
+            color: #333;
+            font-size: 13px;
+            line-height: 1.8;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+
+        .terms-inner {
+            padding: 20px 0;
+        }
+
+        .terms-title {
+            text-align: center;
+            font-size: 16px;
+            font-weight: bold;
+            margin-bottom: 20px;
+            border-bottom: 1px solid #ccc;
+            padding-bottom: 10px;
+        }
+
+        .terms-article {
+            margin-bottom: 15px;
+        }
+        .terms-article-title {
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        
+        .highlight {
+            font-weight: bold;
+            color: #d32f2f;
+            background: linear-gradient(transparent 60%, #ffeb3b 60%);
+        }
+
+        footer {
+            margin-top: 20px;
+            font-size: 12px;
+            color: #888;
+            padding-bottom: 20px;
+            font-family: sans-serif;
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <a href="index.html" class="home-btn">
+            <img src="images/home.png" alt="ホームへ戻る">
+        </a>
+        <h1>スペシャルプレゼント🎁</h1>
+    </header>
+
+    <div class="coupon-list" id="coupon-list-container">
+        </div>
+
+    <div class="terms-container">
+        <div class="terms-toggle" onclick="toggleTerms(this)">
+            ⚠ 利用上の重要なお知らせ
+        </div>
+        <div class="terms-content" id="terms-content">
+            <div class="terms-inner">
+                <div class="terms-title">大石・堀口間における<br>特別優待券利用規約</div>
+                
+                <p>本利用規約（以下，「本規約」といいます。）は，大石慶人（以下，「甲」といいます。）が作成し，堀口様（以下，「乙」といいます。）に交付する特別優待券（以下，「本紙片」といいます。）の利用条件その他一切の関係を定めるものです。乙は，本規約に同意の上（あるいは同意したとみなされ），本紙片を受領するものとします。</p>
+
+                <div class="terms-article">
+                    <div class="terms-article-title">第1条（法的性質の不存在および適用範囲）</div>
+                    本紙片に記載された権利および役務の提供は，甲および乙の二者間においてのみ限定的に認識されるものであり，日本国法およびその他の法域におけるいかなる法的拘束力も有しないものとします。<br>
+                    甲および乙は，本紙片が物理的には単なるパルプ等の繊維集合体（いわゆる<span class="highlight">「ただの紙切れ」</span>）に過ぎないことを相互に確認し，これに異議を申し立てないものとします。
+                </div>
+
+                <div class="terms-article">
+                    <div class="terms-article-title">第2条（権利行使の手続および発声義務）</div>
+                    乙が本紙片の効力を発生させようとする場合（以下，「権利行使」といいます。），乙は甲に対し，当該紙片を提示すると同時に，<span class="highlight">「発動」</span>との文言を，周囲の静寂を破るに足る明瞭かつ十分な音量をもって呼称しなければなりません。<br>
+                    前項の規定による呼称がなされない場合，または甲がその呼称の音量を著しく不十分（「蚊の鳴くような声」等）と判断した場合，本紙片の効力は一切発揮されないものとします。
+                </div>
+
+                <div class="terms-article">
+                    <div class="terms-article-title">第3条（提供者の抗弁権および塞耳権）</div>
+                    前条の規定にかかわらず，甲は，乙による権利行使の試みに対し，これを意図的に看過し，または聴取しなかったものとして扱う権利（以下，<span class="highlight">「塞耳権（そくじけん）」</span>といいます。）を留保します。<br>
+                    甲が塞耳権を行使した場合（「あー聞こえない」等の挙動を含むがこれに限られない），乙の権利行使は無効となり，乙は再度，第2条に定める手続を履行しなければなりません。
+                </div>
+
+                <div class="terms-article">
+                    <div class="terms-article-title">第4条（対価および感謝の表明義務）</div>
+                    本紙片の対価は無償としますが，乙は，本紙片の企画・設計・製造および交付に至るまでに甲が投入した多大なる労力，時間，ならびに精神的献身に対し，深甚なる敬意と感謝の念を抱く義務を負うものとします。<br>
+                    乙は，本紙片の使用の有無にかかわらず，甲に対し，前項に基づく感謝の意を，言語，表情，または態度等の客観的に認識可能な方法により，適宜表明しなければなりません。
+                </div>
+
+                <div class="terms-article">
+                    <div class="terms-article-title">第5条（免責事項）</div>
+                    甲は，本紙片の利用または利用不能（甲の気分による拒絶を含む）に起因して乙に生じたあらゆる損害（期待外れ，徒労感，空腹等を含む）について，一切の責任を負わないものとします。
+                </div>
+
+                <div style="text-align: right; margin-top: 20px;">
+                    以上
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <footer>
+        大事に使ってね
+    </footer>
+
+    <script>
+        const STORAGE_KEY = 'coupon_status_v1';
+        let pressTimer;
+
+        // チケットデータ
+        const tickets = [
+            { id: 1, img: 'ticket1.jpg', title: '至福の寝落ちマッサージ券' },
+            { id: 2, img: 'ticket2.jpg', title: 'ラーメン券' },
+            { id: 3, img: 'ticket3.jpg', title: 'からあげ券' },
+            { id: 4, img: 'ticket4.jpg', title: '食器券' },
+            { id: 5, img: 'ticket5.jpg', title: 'ドライブ券' },
+            { id: 6, img: 'ticket7.jpg', title: 'ライブ券' },
+            { id: 7, img: 'ticket8.jpg', title: '飲み行く券' },
+            { id: 8, img: 'ticket9.jpg', title: 'カラオケ券' },
+            { id: 9, img: 'ticket10.jpg', title: 'ガチャガチャ券' },
+            { id: 10, img: 'ticket11.jpg', title: '風呂スキップ券' }
+        ];
+
+        let usedStatus = JSON.parse(localStorage.getItem(STORAGE_KEY)) || {};
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const container = document.getElementById('coupon-list-container');
+            
+            tickets.forEach(ticket => {
+                const isUsed = usedStatus[ticket.id];
+                
+                let cardClass = '';
+                let btnClass = '';
+                let btnText = '使用する！';
+                let btnStyle = '';
+
+                if (ticket.id === 10) {
+                    if (isUsed) {
+                        btnText = 'またスキップする？';
+                        btnStyle = 'background-color: #4caf50;'; 
+                    }
+                } else {
+                    if (isUsed) {
+                        cardClass = 'used';
+                        btnClass = 'disabled';
+                        btnText = '使用済み';
+                    }
+                }
+
+                const cardHtml = `
+                    <div class="ticket-card ${cardClass}" id="card-${ticket.id}"
+                         onmousedown="startPress(${ticket.id})" 
+                         ontouchstart="startPress(${ticket.id})"
+                         onmouseup="cancelPress()" 
+                         onmouseleave="cancelPress()" 
+                         ontouchend="cancelPress()"
+                         ontouchmove="cancelPress()">
+                        
+                        <div class="used-stamp">使用済み</div>
+                        <img src="images/${ticket.img}" alt="${ticket.title}" class="ticket-img">
+                        <div class="action-area">
+                            <button class="use-btn ${btnClass}" style="${btnStyle}"
+                                    onclick="confirmUse(event, ${ticket.id}, '${ticket.title}')">
+                                ${btnText}
+                            </button>
+                        </div>
+                    </div>
+                `;
+                container.insertAdjacentHTML('beforeend', cardHtml);
+            });
+        });
+
+        function toggleTerms(btn) {
+            const content = document.getElementById('terms-content');
+            btn.classList.toggle('open');
+            if (content.style.maxHeight) {
+                content.style.maxHeight = null;
+            } else {
+                content.style.maxHeight = content.scrollHeight + "px";
+            }
+        }
+
+        function confirmUse(e, ticketId, title) {
+            e.stopPropagation();
+            if (ticketId !== 10 && usedStatus[ticketId]) return;
+
+            let msg = `【${title}】\n\n本当に使用しますか？\n※この操作は取り消せません！`;
+            if (ticketId === 10) {
+                msg = `【${title}】\n\nお風呂をサボりますか？\n（※この券は何度でも使えます！）`;
+            }
+
+            if (confirm(msg)) {
+                useTicket(ticketId);
+            }
+        }
+
+        function useTicket(ticketId) {
+            usedStatus[ticketId] = true;
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(usedStatus));
+
+            if (ticketId === 10) {
+                const card = document.getElementById(`card-${ticketId}`);
+                const btn = card.querySelector('.use-btn');
+                const stamp = card.querySelector('.used-stamp');
+
+                stamp.innerText = "承認！";
+                stamp.style.color = "blue";
+                stamp.style.borderColor = "blue";
+                
+                card.classList.add('used');
+                btn.classList.add('disabled');
+                btn.innerText = '承認完了...';
+                btn.style.backgroundColor = ''; 
+
+                setTimeout(() => {
+                    card.classList.remove('used');
+                    btn.classList.remove('disabled');
+                    btn.innerText = 'またスキップする？';
+                    btn.style.backgroundColor = '#4caf50'; 
+                }, 3000);
+                return; 
+            }
+
+            const card = document.getElementById(`card-${ticketId}`);
+            const btn = card.querySelector('.use-btn');
+            updateCardUI(card, btn, true);
+        }
+
+        function startPress(ticketId) {
+            if (!usedStatus[ticketId]) return;
+            pressTimer = setTimeout(() => {
+                if (confirm("【管理者モード】\n\nこのチケットを「未使用」に戻しますか？")) {
+                    resetTicket(ticketId);
+                }
+            }, 2000);
+        }
+
+        function cancelPress() {
+            clearTimeout(pressTimer);
+        }
+
+        function resetTicket(ticketId) {
+            delete usedStatus[ticketId];
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(usedStatus));
+
+            const card = document.getElementById(`card-${ticketId}`);
+            const btn = card.querySelector('.use-btn');
+            
+            if (ticketId === 10) {
+                card.classList.remove('used');
+                btn.classList.remove('disabled');
+                btn.innerText = '使用する！';
+                btn.style.backgroundColor = ''; 
+            } else {
+                updateCardUI(card, btn, false);
+            }
+            alert("チケットを復活させました！");
+        }
+
+        function updateCardUI(card, btn, isUsed) {
+            if (isUsed) {
+                card.classList.add('used');
+                btn.classList.add('disabled');
+                btn.innerText = '使用済み';
+            } else {
+                card.classList.remove('used');
+                btn.classList.remove('disabled');
+                btn.innerText = '使用する！';
+            }
+        }
+    </script>
+</body>
+</html>

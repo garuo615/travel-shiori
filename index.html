@@ -26,7 +26,7 @@
             text-align: center;
         }
 
-        /* ヘッダー（表紙） */
+        /* ヘッダー */
         header {
             background-color: var(--primary-color);
             color: white;
@@ -34,7 +34,6 @@
             border-bottom-left-radius: 30px;
             border-bottom-right-radius: 30px;
             box-shadow: 0 4px 10px rgba(237, 109, 61, 0.3);
-            /* ホームボタンを消したので position: relative は不要ですが、そのままでも問題ありません */
         }
         
         h1 {
@@ -98,14 +97,11 @@
             font-family: sans-serif;
         }
 
-        /* =========================================
-           キャラクターのスタイル（スクロール配置版）
-           ========================================= */
-        
+        /* キャラクターエリア */
         #chara-container {
             position: relative; 
-            margin: 60px auto 20px; /* 上・左右・下 の余白 */
-            width: 180px;           /* キャラの幅 */
+            margin: 60px auto 20px;
+            width: 180px;
             z-index: 10;
             cursor: pointer;
             text-align: center;
@@ -119,7 +115,6 @@
             margin: 0 auto;
         }
         
-        /* タップした時の動き */
         #chara-container:active #chara-img {
             transform: scale(0.95) translateY(5px);
         }
@@ -127,29 +122,23 @@
         /* 吹き出しのデザイン */
         #speech-bubble {
             position: absolute;
-            bottom: 100%;    /* キャラの真上に配置 */
-            left: 50%;       /* 左右中央 */
-            transform: translateX(-50%); /* 完全に真ん中へ */
-            
+            bottom: 100%;
+            left: 50%;
+            transform: translateX(-50%);
             width: 260px;
-            
-            /* テーマカラーに合わせたデザイン */
             background: #fff;
             color: #4a3b32;
             border: 3px solid #ed6d3d;
             border-radius: 12px;
             padding: 15px;
-            
             font-family: 'DotGothic16', sans-serif;
             font-size: 16px;
             line-height: 1.6;
-            
-            display: none; /* 最初は隠す */
+            display: none;
             box-shadow: 4px 4px 0px rgba(237, 109, 61, 0.2);
             z-index: 1001;
         }
 
-        /* 吹き出しのしっぽ（枠線） */
         #speech-bubble::after {
             content: '';
             position: absolute;
@@ -161,7 +150,6 @@
             border-color: #ed6d3d transparent transparent transparent;
         }
         
-        /* 吹き出しのしっぽ（白塗り） */
         #speech-bubble::before {
             content: '';
             position: absolute;
@@ -174,7 +162,7 @@
             z-index: 1;
         }
 
-        /* ▼▼▼ デバッグエリア（動作確認用） ▼▼▼ */
+        /* デバッグエリア */
         #debug-area {
             background-color: #eee;
             color: #333;
@@ -188,11 +176,6 @@
             border: 2px dashed #999;
         }
 
-        #debug-area h3 {
-            margin-top: 0;
-            font-size: 16px;
-        }
-
         .debug-btn {
             background: #fff;
             border: 1px solid #ccc;
@@ -202,9 +185,7 @@
             border-radius: 4px;
             font-size: 14px;
         }
-        .debug-btn:hover {
-            background: #ddd;
-        }
+        .debug-btn:hover { background: #ddd; }
         .current-time-display {
             font-weight: bold;
             color: #ed6d3d;
@@ -237,6 +218,9 @@
         <a href="#" class="menu-btn" style="opacity: 0.5; cursor: default;">
             <span class="icon">🗺️</span> マップ (準備中)
         </a>
+
+        <a href="#" class="menu-btn" id="special-present-btn">
+            </a>
     </div>
 
     <div id="chara-container" onclick="talk()">
@@ -258,37 +242,42 @@
         <button class="debug-btn" onclick="setFakeTime('2025-12-24T07:00')">☀️ 朝 (7:00)</button>
         <button class="debug-btn" onclick="setFakeTime('2025-12-24T23:00')">🌙 夜 (23:00)</button>
         <br>
-        <div style="margin-top:5px;">
-            <input type="datetime-local" id="manualDebugTime">
-            <button class="debug-btn" onclick="setManualTime()">適用</button>
-        </div>
-        
-        <button class="debug-btn" onclick="resetTime()" style="background:#ffcccc; margin-top:10px;">リセット（現在時刻に戻す）</button>
+        <button class="debug-btn" onclick="resetIntro()" style="background:#ffeb3b;">🔰 自己紹介リセット</button>
+        <button class="debug-btn" onclick="resetTime()" style="background:#ffcccc;">🕒 時間リセット</button>
         
         <div class="current-time-display" id="debug-display">現在時刻: 通常モード</div>
     </div>
 
     <script>
-        // === 設定エリア ===
+        // === 設定変数 ===
         let tapCount = 0;
         let isTyping = false;
         let typingTimer = null;
-        
-        // ★デバッグ用：時間を上書きする変数
-        let currentTimeOverride = null;
+        let resetTimer = null; // 機嫌リセット用のタイマー
+        let currentTimeOverride = null; // デバッグ用時間
 
-        // 1. 通常のセリフ
-        const normalTexts = [
-            "京都へようこそ！",
-            "上のメニューから\nスケジュールを確認できるよ。",
-            "準備はバッチリ？",
-            "タップしてくれてありがとう。",
-            "楽しみだね！",
-            "僕をタップしても\n何も出ないよ...多分。",
-            "お土産は何を買う予定？"
+        const STORAGE_INTRO_KEY = 'travel_intro_done_v1';
+
+        // ★プレゼント解禁日時（2025年12月25日 00:00:00）
+        const RELEASE_DATE = new Date('2025-12-25T00:00:00');
+
+        // --- セリフデータ ---
+
+        const introTexts = [
+            "はじめまして！\n今回の旅の案内人だよ。",
+            "僕をタップすると\nいろいろお喋りするよ。",
+            "それじゃあ、\n楽しい旅にしよう！"
         ];
 
-        // 2. 特定の日付（旅行当日）のセリフ
+        const annoyedTexts = [
+            "……。",
+            "そんなに触らないで。",
+            "ねえ、しつこいよ？",
+            "もしかして、\nヒマなの？",
+            "ケツイがみなぎってきた。",
+            "画面、擦り切れない？"
+        ];
+
         const dateTexts = {
             "12/24": [
                 "ついに当日だね！\nメリークリスマス！",
@@ -296,25 +285,38 @@
                 "今日はたくさん歩くよ～"
             ],
             "12/25": [
-                "旅行2日目！\n今日も楽しもう！",
-                "足、痛くない？",
-                "帰りたくないなぁ..."
+                "昨日の夜は楽しかったね。",
+                "足、痛くない？\n無理しないでね。",
+                "まだ帰りたくないなぁ..."
             ]
         };
 
-        // 3. 特定の時間帯のセリフ
+        const omikujiTexts = [
+            "今日の運勢は...大吉！\n良いことあるよ！",
+            "今日の運勢は...中吉。\n抹茶スイーツが吉。",
+            "ラッキーアイテムは\n『八ツ橋』だよ。"
+        ];
+
         const timeTexts = {
-            morning: ["おはよう！\n早起きだね。", "朝ごはんは食べた？"],
-            night:   ["もう夜だよ。\n明日に備えて寝よう。", "……Zzz"]
+            morning: [
+                "ふわぁ...おはよう。\n早起きだね。",
+                "朝ごはんは食べた？"
+            ],
+            night: [
+                "もう寝る時間だよ。",
+                "...明日に備えてZzz",
+                "夜更かしはお肌に悪いよ。"
+            ]
         };
 
-        // 4. 連打された時のセリフ
-        const annoyedTexts = [
-            "……。",
-            "そんなに触らないで。",
-            "しつこいなあ。",
-            "もしかして、\nヒマなの？",
-            "ケツイがみなぎってきた。"
+        const normalTexts = [
+            "京都へようこそ！",
+            "準備はバッチリ？",
+            "右上のメニューも見てね。",
+            "写真をたくさん撮ろう！",
+            "僕をタップしても\n何も出ないよ...多分。",
+            "お土産は何を買う予定？",
+            "ワクワクしてきた！"
         ];
 
         // === メイン機能 ===
@@ -327,48 +329,56 @@
                 isTyping = false;
             }
 
+            if (resetTimer) clearTimeout(resetTimer);
+
             tapCount++;
             let message = "";
 
-            // ★重要：デバッグ時刻があればそれを使い、なければ現在時刻を使う
             const now = currentTimeOverride ? new Date(currentTimeOverride) : new Date();
-            
-            const dateStr = (now.getMonth() + 1) + "/" + now.getDate(); // 例: "12/24"
+            const dateStr = (now.getMonth() + 1) + "/" + now.getDate();
             const hour = now.getHours();
-
-            // デバッグ表示の更新（確認用）
             updateDebugDisplay(now);
 
-            // --- 条件分岐ロジック ---
-
-            // 優先度1: タップ連打（10回以上かつ30%の確率）
-            if (tapCount > 10 && Math.random() < 0.3) {
-                 message = pickRandom(annoyedTexts);
-            }
-            // 優先度2: 日付判定
-            else if (dateTexts[dateStr]) {
-                message = pickRandom(dateTexts[dateStr]);
-            }
-            // 優先度3: 朝（5時〜9時）
-            else if (hour >= 5 && hour <= 9) {
-                message = pickRandom(timeTexts.morning);
-            }
-            // 優先度4: 夜（22時〜4時）
-            else if (hour >= 22 || hour <= 4) {
-                message = pickRandom(timeTexts.night);
-            }
-            // それ以外: 通常
+            const isIntroDone = localStorage.getItem(STORAGE_INTRO_KEY);
+            if (!isIntroDone) {
+                if (tapCount <= introTexts.length) {
+                    message = introTexts[tapCount - 1];
+                } 
+                if (tapCount >= introTexts.length) {
+                    localStorage.setItem(STORAGE_INTRO_KEY, 'true');
+                    setTimeout(() => { tapCount = 0; }, 5000); 
+                }
+            } 
             else {
-                message = pickRandom(normalTexts);
+                if (tapCount > 10 && Math.random() < 0.3) {
+                    message = pickRandom(annoyedTexts);
+                }
+                else if (dateTexts[dateStr]) {
+                    message = pickRandom(dateTexts[dateStr]);
+                }
+                else if (Math.random() < 0.1) {
+                    message = pickRandom(omikujiTexts);
+                }
+                else if (hour >= 5 && hour <= 9) {
+                    message = pickRandom(timeTexts.morning);
+                }
+                else if (hour >= 22 || hour <= 4) {
+                    message = pickRandom(timeTexts.night);
+                }
+                else {
+                    message = pickRandom(normalTexts);
+                }
             }
 
-            // 吹き出し表示
             bubble.style.display = "block";
             bubble.innerHTML = "";
             typeWriter(message, bubble, 0);
-        }
 
-        // --- 補助関数 ---
+            resetTimer = setTimeout(() => {
+                tapCount = 0;
+                console.log("機嫌が直りました");
+            }, 30000);
+        }
 
         function pickRandom(array) {
             return array[Math.floor(Math.random() * array.length)];
@@ -392,16 +402,14 @@
             }
         }
 
-        // --- デバッグ用機能 ---
-
         function setFakeTime(timeStr) {
             currentTimeOverride = timeStr;
             const fakeDate = new Date(timeStr);
             alert(`現在時刻を【${timeStr}】に設定しました。\nキャラクターをタップして確認してください。`);
             updateDebugDisplay(fakeDate);
-            
-            // タップ回数もリセットして反応しやすくする
             tapCount = 0; 
+            
+            checkSpecialPresent(); // ボタンの状態更新
         }
 
         function setManualTime() {
@@ -413,6 +421,14 @@
             currentTimeOverride = null;
             alert("本来の現在時刻に戻しました。");
             updateDebugDisplay(new Date());
+
+            checkSpecialPresent(); // ボタンの状態更新
+        }
+
+        function resetIntro() {
+            localStorage.removeItem(STORAGE_INTRO_KEY);
+            tapCount = 0;
+            alert("自己紹介を未読状態に戻しました。\n最初からタップしてみてください。");
         }
 
         function updateDebugDisplay(dateObj) {
@@ -421,6 +437,42 @@
             const status = currentTimeOverride ? "偽装中" : "通常";
             display.innerText = `現在時刻(${status}): ${str}`;
         }
+
+        // ▼プレゼント表示チェック関数（改修版）
+        function checkSpecialPresent() {
+            const btn = document.getElementById('special-present-btn');
+            const now = currentTimeOverride ? new Date(currentTimeOverride) : new Date();
+
+            if (now >= RELEASE_DATE) {
+                // 【解禁】 12/25以降
+                btn.href = "coupon.html"; // リンク有効化
+                btn.innerHTML = '<span class="icon">🎁</span> スペシャルプレゼント';
+                
+                // ピンク色のデザイン
+                btn.style.backgroundColor = '#fff0f5';
+                btn.style.borderColor = '#ff69b4';
+                btn.style.color = '#ff69b4';
+                btn.style.pointerEvents = 'auto'; // クリック可能に
+                btn.style.opacity = '1';
+            } else {
+                // 【ロック中】 12/24以前
+                btn.href = "#"; // リンク無効化
+                btn.innerHTML = '<span class="icon">🔒</span> ????';
+                
+                // グレーのデザイン
+                btn.style.backgroundColor = '#f0f0f0';
+                btn.style.borderColor = '#ccc';
+                btn.style.color = '#aaa';
+                btn.style.pointerEvents = 'none'; // クリック不可に（押しても反応しない）
+                btn.style.opacity = '1';
+            }
+            // 常に表示はしておく
+            btn.style.display = 'block'; 
+        }
+
+        // ページ読み込み時にチェックを実行
+        document.addEventListener('DOMContentLoaded', checkSpecialPresent);
+
     </script>
 </body>
 </html>
