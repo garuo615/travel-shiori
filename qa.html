@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>旅のQ&A ❓</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=DotGothic16&display=swap" rel="stylesheet">
+
+    <style>
+        /* 京都・滋賀 旅のしおりテーマ（暖色系） */
+        :root {
+            --primary-color: #ed6d3d; /* 深いオレンジ */
+            --bg-color: #fdfcf8;      /* 和紙のようなオフホワイト */
+            --text-color: #4a3b32;    /* 焦げ茶色 */
+            --accent-color: #ffcc80;  /* 薄いオレンジ */
+        }
+
+        body {
+            font-family: "Hiragino Mincho ProN", "Yu Mincho", serif;
+            margin: 0;
+            padding: 0;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            text-align: center;
+        }
+
+        /* ヘッダー */
+        header {
+            background-color: var(--primary-color);
+            color: white;
+            padding: 30px 20px;
+            border-bottom-left-radius: 20px;
+            border-bottom-right-radius: 20px;
+            box-shadow: 0 4px 10px rgba(237, 109, 61, 0.3);
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* ホームボタン（画像） */
+        .home-btn {
+            position: absolute;
+            top: 50%;
+            left: 20px;
+            transform: translateY(-50%);
+            display: block;
+            width: 40px; 
+            height: auto;
+            transition: transform 0.2s;
+        }
+        
+        .home-btn img {
+            width: 100%;
+            height: auto;
+            display: block;
+        }
+
+        .home-btn:active {
+            transform: translateY(-50%) scale(0.8);
+        }
+        
+        h1 {
+            margin: 0;
+            font-size: 22px;
+            letter-spacing: 1px;
+        }
+
+        /* Q&Aリスト */
+        .qa-container {
+            max-width: 600px;
+            margin: 40px auto;
+            padding: 0 20px 40px;
+            text-align: left;
+        }
+
+        .qa-item {
+            margin-bottom: 20px;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+            overflow: hidden;
+            border: 1px solid #eee;
+        }
+
+        /* 質問部分 */
+        .question {
+            padding: 20px;
+            font-weight: bold;
+            font-size: 16px;
+            cursor: pointer;
+            position: relative;
+            background-color: #fff;
+            transition: background-color 0.2s;
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+        }
+
+        .question:hover {
+            background-color: #fffaf5;
+        }
+
+        .q-mark {
+            color: var(--primary-color);
+            font-family: 'DotGothic16', sans-serif;
+            font-size: 20px;
+            flex-shrink: 0;
+        }
+
+        .toggle-icon {
+            margin-left: auto;
+            color: #ccc;
+            font-size: 12px;
+            transition: transform 0.3s;
+        }
+        
+        /* 開いている時のスタイル */
+        .qa-item.active .toggle-icon {
+            transform: rotate(180deg);
+        }
+        .qa-item.active .question {
+            border-bottom: 1px solid #f0f0f0;
+        }
+
+        /* 回答部分 */
+        .answer {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease-out;
+            background-color: #fcfcfc;
+            font-size: 14px;
+            line-height: 1.6;
+            color: #666;
+        }
+
+        .answer-inner {
+            padding: 20px;
+            border-left: 4px solid var(--primary-color); /* 左にアクセントライン */
+        }
+        
+        .a-mark {
+            font-weight: bold;
+            color: var(--primary-color);
+            margin-right: 5px;
+        }
+
+        footer {
+            margin-top: 20px;
+            font-size: 12px;
+            color: #888;
+            padding-bottom: 30px;
+            font-family: sans-serif;
+        }
+
+        /* カテゴリラベル（装飾） */
+        .category-label {
+            display: inline-block;
+            margin: 30px 0 10px;
+            font-size: 12px;
+            color: #999;
+            border-bottom: 1px dashed #ccc;
+            padding-bottom: 3px;
+        }
+
+    </style>
+</head>
+<body>
+
+    <header>
+        <a href="index.html" class="home-btn">
+            <img src="images/home.png" alt="ホームへ戻る">
+        </a>
+        <h1>よくある質問（Q&A）</h1>
+    </header>
+
+    <div class="qa-container">
+        
+        <div class="category-label">📱 動作環境・仕様</div>
+
+        <div class="qa-item">
+            <div class="question" onclick="toggleAnswer(this)">
+                <span class="q-mark">Q.</span>
+                このアプリはどの機種に対応していますか？
+                <span class="toggle-icon">▼</span>
+            </div>
+            <div class="answer">
+                <div class="answer-inner">
+                    <span class="a-mark">A.</span>
+                    本アプリは<strong>iPhone 16</strong>にのみ最適化されています。その他の機種での動作は保証対象外（どうでもいい）です。
+                </div>
+            </div>
+        </div>
+
+        <div class="qa-item">
+            <div class="question" onclick="toggleAnswer(this)">
+                <span class="q-mark">Q.</span>
+                ダークモード（黒背景）にはできますか？
+                <span class="toggle-icon">▼</span>
+            </div>
+            <div class="answer">
+                <div class="answer-inner">
+                    <span class="a-mark">A.</span>
+                    未対応です。iPhoneの明るさを手動で下げることで、<strong>「擬似的なダークモード」</strong>を演出することは可能です。
+                </div>
+            </div>
+        </div>
+
+        <div class="qa-item">
+            <div class="question" onclick="toggleAnswer(this)">
+                <span class="q-mark">Q.</span>
+                音が出ないのですが？
+                <span class="toggle-icon">▼</span>
+            </div>
+            <div class="answer">
+                <div class="answer-inner">
+                    <span class="a-mark">A.</span>
+                    仕様です。BGMや効果音が欲しい場合は、隣にいる<strong>開発者</strong>にリクエストしてください。口頭で再生します。
+                </div>
+            </div>
+        </div>
+
+        <div class="qa-item">
+            <div class="question" onclick="toggleAnswer(this)">
+                <span class="q-mark">Q.</span>
+                画面が固まって動かなくなりました。
+                <span class="toggle-icon">▼</span>
+            </div>
+            <div class="answer">
+                <div class="answer-inner">
+                    <span class="a-mark">A.</span>
+                    再読み込みを試してください。それでも直らない場合、利用端末に問題があると思われます。<strong>買い替え</strong>をお勧めします。
+                </div>
+            </div>
+        </div>
+
+        <div class="category-label">🔧 機能・その他</div>
+
+        <div class="qa-item">
+            <div class="question" onclick="toggleAnswer(this)">
+                <span class="q-mark">Q.</span>
+                広告は出ないのですか？
+                <span class="toggle-icon">▼</span>
+            </div>
+            <div class="answer">
+                <div class="answer-inner">
+                    <span class="a-mark">A.</span>
+                    完全な広告フリー設計です。ただし、開発者への<strong>お金（寄付）</strong>は24時間365日募集中です。
+                </div>
+            </div>
+        </div>
+
+        <div class="qa-item">
+            <div class="question" onclick="toggleAnswer(this)">
+                <span class="q-mark">Q.</span>
+                クーポンの使用履歴はどこに保存されますか？
+                <span class="toggle-icon">▼</span>
+            </div>
+            <div class="answer">
+                <div class="answer-inner">
+                    <span class="a-mark">A.</span>
+                    お使いのブラウザ（ローカルストレージ）と、<strong>開発者の記憶</strong>に大切に保管されます。
+                </div>
+            </div>
+        </div>
+
+        <div class="qa-item">
+            <div class="question" onclick="toggleAnswer(this)">
+                <span class="q-mark">Q.</span>
+                時間になったら通知は来ますか？
+                <span class="toggle-icon">▼</span>
+            </div>
+            <div class="answer">
+                <div class="answer-inner">
+                    <span class="a-mark">A.</span>
+                    スマホには来ませんが、隣にいる<strong>「人間」</strong>が「そろそろ行くよ～」とアナログ通知を行います。
+                </div>
+            </div>
+        </div>
+
+        <div class="qa-item">
+            <div class="question" onclick="toggleAnswer(this)">
+                <span class="q-mark">Q.</span>
+                裏技や隠しコマンドはありますか？
+                <span class="toggle-icon">▼</span>
+            </div>
+            <div class="answer">
+                <div class="answer-inner">
+                    <span class="a-mark">A.</span>
+                    トップページの<strong>ダルマッカ</strong>（案内人）のセリフには、激レアなものがあるかも……？
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <footer>
+        困った時は開発者まで。
+    </footer>
+
+    <script>
+        // アコーディオンの開閉処理
+        function toggleAnswer(element) {
+            // クリックされた質問の親要素(.qa-item)を取得
+            const item = element.parentElement;
+            const answer = item.querySelector('.answer');
+            
+            // クラスの付け替え（矢印の回転など）
+            item.classList.toggle('active');
+
+            // 高さの制御（アニメーション用）
+            if (answer.style.maxHeight) {
+                answer.style.maxHeight = null;
+            } else {
+                answer.style.maxHeight = answer.scrollHeight + "px";
+            }
+        }
+    </script>
+</body>
+</html>
