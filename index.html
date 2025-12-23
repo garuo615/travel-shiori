@@ -23,9 +23,9 @@
     <style>
         /* 京都・滋賀 旅のしおりテーマ（暖色系） */
         :root {
-            --primary-color: #ed6d3d; /* 深いオレンジ */
-            --bg-color: #fdfcf8;      /* 和紙のようなオフホワイト */
-            --text-color: #4a3b32;    /* 焦げ茶色 */
+            --primary-color: #ed6d3d; 
+            --bg-color: #fdfcf8;      
+            --text-color: #4a3b32;    
         }
 
         body {
@@ -35,6 +35,7 @@
             background-color: var(--bg-color);
             color: var(--text-color);
             text-align: center;
+            user-select: none; /* 連打時の選択防止 */
         }
 
         /* ヘッダー */
@@ -71,7 +72,6 @@
             margin: 0 auto;
         }
 
-        /* ボタンのデザイン */
         .menu-btn {
             display: block;
             background-color: white;
@@ -99,15 +99,6 @@
             vertical-align: middle;
         }
 
-        /* フッター */
-        footer {
-            margin-top: 20px;
-            font-size: 12px;
-            color: #888;
-            padding-bottom: 20px;
-            font-family: sans-serif;
-        }
-
         /* キャラクターエリア */
         #chara-container {
             position: relative; 
@@ -116,6 +107,7 @@
             z-index: 10;
             cursor: pointer;
             text-align: center;
+            -webkit-tap-highlight-color: transparent;
         }
 
         #chara-img {
@@ -124,13 +116,14 @@
             filter: drop-shadow(3px 3px 0px rgba(0,0,0,0.2)); 
             display: block;
             margin: 0 auto;
+            transition: transform 0.1s;
         }
         
         #chara-container:active #chara-img {
             transform: scale(0.95) translateY(5px);
         }
 
-        /* 吹き出しのデザイン */
+        /* 吹き出し */
         #speech-bubble {
             position: absolute;
             bottom: 100%;
@@ -173,34 +166,12 @@
             z-index: 1;
         }
 
-        /* デバッグエリア */
-        #debug-area {
-            background-color: #eee;
-            color: #333;
-            padding: 15px;
-            margin: 30px auto;
-            border-radius: 10px;
-            max-width: 90%;
+        footer {
+            margin-top: 20px;
+            font-size: 12px;
+            color: #888;
+            padding-bottom: 20px;
             font-family: sans-serif;
-            font-size: 14px;
-            text-align: center;
-            border: 2px dashed #999;
-        }
-
-        .debug-btn {
-            background: #fff;
-            border: 1px solid #ccc;
-            padding: 8px 12px;
-            margin: 5px;
-            cursor: pointer;
-            border-radius: 4px;
-            font-size: 14px;
-        }
-        .debug-btn:hover { background: #ddd; }
-        .current-time-display {
-            font-weight: bold;
-            color: #ed6d3d;
-            margin-top: 10px;
         }
     </style>
 </head>
@@ -212,7 +183,6 @@
     </header>
 
     <div class="menu">
-        <p>旅の準備を始めましょう</p>
 
         <a href="schedule.html" class="menu-btn">
             <span class="icon">📅</span> スケジュール
@@ -230,8 +200,7 @@
             <span class="icon">❓</span> 旅のQ&A
         </a>
 
-        <a href="#" class="menu-btn" id="special-present-btn">
-            </a>
+        <a href="#" class="menu-btn" id="special-present-btn"></a>
     </div>
 
     <div id="chara-container" onclick="talk()">
@@ -243,156 +212,294 @@
         Have a nice trip!
     </footer>
 
-    <div id="debug-area">
-        <h3>🔧 動作確認モード</h3>
-        <p>時間を偽装して、キャラの反応テストができます</p>
-        
-        <button class="debug-btn" onclick="setFakeTime('2025-12-24T14:00')">🎄 1日目(12/24)</button>
-        <button class="debug-btn" onclick="setFakeTime('2025-12-25T14:00')">🎁 2日目(12/25)</button>
-        <br>
-        <button class="debug-btn" onclick="setFakeTime('2025-12-24T07:00')">☀️ 朝 (7:00)</button>
-        <button class="debug-btn" onclick="setFakeTime('2025-12-24T23:00')">🌙 夜 (23:00)</button>
-        <br>
-        <button class="debug-btn" onclick="resetIntro()" style="background:#ffeb3b;">🔰 自己紹介リセット</button>
-        <button class="debug-btn" onclick="resetTime()" style="background:#ffcccc;">🕒 時間リセット</button>
-        
-        <div class="current-time-display" id="debug-display">現在時刻: 通常モード</div>
-    </div>
-
     <script>
-        // === 設定変数 ===
-        let tapCount = 0;
+        // === 設定・状態変数 ===
+        let tapCount = 0;       // 連打判定用
+        let rapidTapCount = 0;  // 短時間連打用
+        let tapResetTimer = null;
+        
         let isTyping = false;
         let typingTimer = null;
-        let resetTimer = null; // 機嫌リセット用のタイマー
-        let currentTimeOverride = null; // デバッグ用時間
+        let angerCooldownTimer = null; // 怒りモード解除用
+        
+        // 会話キュー（連続セリフ用）
+        let conversationQueue = [];
 
-        const STORAGE_INTRO_KEY = 'travel_intro_done_v1';
-
-        // ★プレゼント解禁日時（2025年12月25日 00:00:00）
+        // ストレージキー
+        const STORAGE_INTRO_KEY = 'intro_done_v2';
+        const STORAGE_24_KEY = 'first_24_done_v2';
+        const STORAGE_25_KEY = 'first_25_done_v2';
+        const STORAGE_AFTER_KEY = 'first_after_done_v2';
+        
         const RELEASE_DATE = new Date('2025-12-25T00:00:00');
 
-        // --- セリフデータ ---
+        // === セリフデータ定義 ===
 
+        // 🔰 自己紹介 (初回起動時)
         const introTexts = [
             "はじめまして！\n今回の旅の案内人だよ。",
             "僕をタップすると\nいろいろお喋りするよ。",
             "それじゃあ、\n楽しい旅にしよう！"
         ];
 
-        const annoyedTexts = [
-            "……。",
-            "そんなに触らないで。",
-            "ねえ、しつこいよ？",
-            "もしかして、\nヒマなの？",
-            "ケツイがみなぎってきた。",
-            "画面、擦り切れない？"
-        ];
-
-        const dateTexts = {
+        // A. 初回確定セリフ (各期間の初回タップ時)
+        const firstTimeTexts = {
             "12/24": [
-                "ついに当日だね！\nメリークリスマス！",
-                "新幹線の時間は大丈夫？",
-                "今日はたくさん歩くよ～"
+                "待ちに待った誕生日旅行だね",
+                "23歳最後の1日を楽しもう!!"
             ],
             "12/25": [
-                "昨日の夜は楽しかったね。",
-                "足、痛くない？\n無理しないでね。",
-                "まだ帰りたくないなぁ..."
-            ]
-        };
-
-        const omikujiTexts = [
-            "今日の運勢は...大吉！\n良いことあるよ！",
-            "今日の運勢は...中吉。\n抹茶スイーツが吉。",
-            "ラッキーアイテムは\n『八ツ橋』だよ。"
-        ];
-
-        const timeTexts = {
-            morning: [
-                "ふわぁ...おはよう。\n早起きだね。",
-                "朝ごはんは食べた？"
+                "誕生日おめでとう！",
+                "これからの1年も\n最高の思い出にしようね"
             ],
-            night: [
-                "もう寝る時間だよ。",
-                "...明日に備えてZzz",
-                "夜更かしはお肌に悪いよ。"
+            "after": [
+                "奇跡的な時間だったね、、",
+                "旅行は終わっちゃったけど\n冬休みはまだまだ続くよ!!"
             ]
         };
 
-        const normalTexts = [
-            "京都へようこそ！",
-            "準備はバッチリ？",
-            "右上のメニューも見てね。",
-            "写真をたくさん撮ろう！",
-            "僕をタップしても\n何も出ないよ...多分。",
-            "お土産は何を買う予定？",
-            "ワクワクしてきた！"
+        // B. 激レアセリフ (5%) - 文字列または配列(連続セリフ)
+        const rareTexts = [
+            "いつか　ヒヒダルマに　なるひを　ゆめみて　ケツイが　みなぎった",
+            "きのうの　ゆうはんを　おもいだして　ケツイが　みなぎった",
+            "おふとんの　ぬくもりを　おもいだして　ケツイが　みなぎった",
+            "まーちゃんごめんね",
+            "厳しさのなかにある",
+            "スカしたな？",
+            // ポケモンあばれる (連続)
+            [
+                "ダルマッカの　あばれる！",
+                "ダルマッカは　あばれている！",
+                "ダルマッカは　つかれはてて　こんらんしてしまった！"
+            ],
+            // ポケモン攻撃 (連続)
+            [
+                "ダルマッカの　ほのおのパンチ！",
+                "ダルマッカの　こうげきは　はずれた！"
+            ],
+            // Undertale (連続)
+            [
+                "......",
+                "......",
+                "......",
+                "＊しかし　だれもこなかった。"
+            ]
         ];
 
-        // === メイン機能 ===
+        // C. 怒りセリフ
+        const angryTexts = [
+            "……。",
+            "ちょっと触りすぎじゃない？",
+            "ねえ、しつこいよー！",
+            "もしかして、\nヒマなの？",
+            "画面、擦り切れない？",
+            "撫できられちゃうよ！",
+            "火傷しちゃうよ？",
+            "くすぐったいよー",
+            "充電がも゛っただいっ!!!!"
+        ];
+
+        // D-J. 通常・条件セリフ (プール用)
+        const normalPool = {
+            // D. いつでも
+            always: [
+                "ねえ、今楽しい？\n僕は最高に楽しいよ。",
+                "上のメニューから\n思い出アルバム更新してね。",
+                "トイレ大丈夫？\n我慢は体に毒だよ。",
+                "このアプリの制作費は\n0円です！",
+                "困ったときは\nQ&Aページを見てみて！"
+            ],
+            // E. 朝 (5:00-9:00)
+            morning: [
+                "ふわぁ…おはよう。\nよく眠れた？",
+                "朝だよー！\n準備は順調？",
+                "今日も一日\n楽しんでいこう！",
+                "忘れ物ない？\nスマホ、財布、愛嬌。",
+                "朝ごはんは\nしっかり食べようね。"
+            ],
+            // F. 夜 (22:00-4:59)
+            night: [
+                "もう寝る時間だよ。\nおやすみ。",
+                "明日も早いから\n早く寝なさい！",
+                "今日一日お疲れ様。\nいい夢見てね。",
+                "夜更かしはお肌の敵。\nスマホ置いて寝よう。",
+                "Zzz...\n(寝たふりをしている)"
+            ],
+            // G. 12/23
+            day23: [
+                "いよいよ明日だね！\n準備はバッチリ？",
+                "早く寝ないと\n明日寝坊するよ？",
+                "楽しみすぎて\n僕が眠れないかも。"
+            ],
+            // H. 12/24
+            day24: [
+                "旅の１日目ってワクワクするよね",
+                "寒くない？\n温かくしてね。",
+                "23歳も残り少しだね",
+                "誕生日イブってこと、、？"
+            ],
+            // I. 12/25
+            day25: [
+                "ハッピーバースデー！\n主役のお出ましだ！」",
+                "メリークリスマス！\nそしておめでとう。",
+                "今日も滋賀県！\n琵琶湖が見えるかな？",
+                "帰りたくないなぁ…\nもっと一緒にいたいね。"
+            ],
+            // J. 12/26以降
+            dayAfter: [
+                "おかえりなさい。\n楽しかったね！",
+                "写真を見返して\nニヤニヤしよう。",
+                "次の旅行は\nどこに行こうか？",
+                "現実に戻る時間だ…\nでも思い出はずっと残るよ。",
+                "旅の疲れ、\nちゃんと癒やしてね。"
+            ]
+        };
+
+
+        // === メインロジック ===
 
         function talk() {
             const bubble = document.getElementById('speech-bubble');
             
+            // タイピング途中なら即時完了させる等の処理は省略し、
+            // 毎回リセットして新しいセリフを表示するスタイル
             if (isTyping) {
                 clearTimeout(typingTimer);
                 isTyping = false;
             }
 
-            if (resetTimer) clearTimeout(resetTimer);
+            // --- 0. 会話キュー（連続セリフ）が残っている場合 ---
+            // 最優先で続きを喋る
+            if (conversationQueue.length > 0) {
+                const nextMsg = conversationQueue.shift();
+                showBubble(nextMsg);
+                return;
+            }
 
-            tapCount++;
-            let message = "";
-
-            const now = currentTimeOverride ? new Date(currentTimeOverride) : new Date();
-            const dateStr = (now.getMonth() + 1) + "/" + now.getDate();
+            // 現在時刻の取得
+            const now = new Date();
+            const month = now.getMonth() + 1;
+            const date = now.getDate();
             const hour = now.getHours();
-            updateDebugDisplay(now);
 
-            const isIntroDone = localStorage.getItem(STORAGE_INTRO_KEY);
-            if (!isIntroDone) {
-                if (tapCount <= introTexts.length) {
-                    message = introTexts[tapCount - 1];
-                } 
-                if (tapCount >= introTexts.length) {
-                    localStorage.setItem(STORAGE_INTRO_KEY, 'true');
-                    setTimeout(() => { tapCount = 0; }, 5000); 
-                }
-            } 
-            else {
-                if (tapCount > 10 && Math.random() < 0.3) {
-                    message = pickRandom(annoyedTexts);
-                }
-                else if (dateTexts[dateStr]) {
-                    message = pickRandom(dateTexts[dateStr]);
-                }
-                else if (Math.random() < 0.1) {
-                    message = pickRandom(omikujiTexts);
-                }
-                else if (hour >= 5 && hour <= 9) {
-                    message = pickRandom(timeTexts.morning);
-                }
-                else if (hour >= 22 || hour <= 4) {
-                    message = pickRandom(timeTexts.night);
-                }
-                else {
-                    message = pickRandom(normalTexts);
+            // --- 1. 初対面（自己紹介） ---
+            if (!localStorage.getItem(STORAGE_INTRO_KEY)) {
+                // 自己紹介キューをセットして開始
+                conversationQueue = [...introTexts]; 
+                const firstMsg = conversationQueue.shift();
+                showBubble(firstMsg);
+                
+                // ここでは「一度話し始めたら既読」扱いにする
+                localStorage.setItem(STORAGE_INTRO_KEY, 'true');
+                return;
+            }
+
+            // --- 2. 日付別・初回確定セリフ（最優先） ---
+            // 12/24の初回
+            if (month === 12 && date === 24 && !localStorage.getItem(STORAGE_24_KEY)) {
+                conversationQueue = [...firstTimeTexts["12/24"]];
+                showBubble(conversationQueue.shift());
+                localStorage.setItem(STORAGE_24_KEY, 'true');
+                return;
+            }
+            // 12/25の初回
+            if (month === 12 && date === 25 && !localStorage.getItem(STORAGE_25_KEY)) {
+                conversationQueue = [...firstTimeTexts["12/25"]];
+                showBubble(conversationQueue.shift());
+                localStorage.setItem(STORAGE_25_KEY, 'true');
+                return;
+            }
+            // 12/26以降の初回
+            if ((month === 12 && date >= 26) || month === 1) { // 年越しも考慮
+                if (!localStorage.getItem(STORAGE_AFTER_KEY)) {
+                    conversationQueue = [...firstTimeTexts["after"]];
+                    showBubble(conversationQueue.shift());
+                    localStorage.setItem(STORAGE_AFTER_KEY, 'true');
+                    return;
                 }
             }
 
-            bubble.style.display = "block";
-            bubble.innerHTML = "";
-            typeWriter(message, bubble, 0);
 
-            resetTimer = setTimeout(() => {
-                tapCount = 0;
-                console.log("機嫌が直りました");
-            }, 30000);
+            // --- 連打判定ロジック ---
+            // 3秒以内に11回タップされたら怒りモードへ移行
+            rapidTapCount++;
+            if (tapResetTimer) clearTimeout(tapResetTimer);
+            tapResetTimer = setTimeout(() => {
+                rapidTapCount = 0;
+            }, 3000); // 3秒でリセット
+
+            if (rapidTapCount >= 11) {
+                // 怒りモード発動（30秒間）
+                if (angerCooldownTimer) clearTimeout(angerCooldownTimer);
+                angerCooldownTimer = setTimeout(() => {
+                    rapidTapCount = 0; // 30秒後に解除
+                    console.log("機嫌が直りました");
+                }, 30000);
+            }
+
+            // 怒りモード中の場合
+            // ただし、低確率(5%)の激レアセリフは怒り中でも出る
+            const isAngry = (rapidTapCount >= 11);
+            const isRare = (Math.random() < 0.05); // 5%
+
+            // --- 3. 激レアセリフ (5%) ---
+            if (isRare) {
+                const rareItem = pickRandom(rareTexts);
+                if (Array.isArray(rareItem)) {
+                    // 連続セリフの場合
+                    conversationQueue = [...rareItem];
+                    showBubble(conversationQueue.shift());
+                } else {
+                    showBubble(rareItem);
+                }
+                return;
+            }
+
+            // --- 4. 怒りモード (連打中) ---
+            if (isAngry) {
+                showBubble(pickRandom(angryTexts));
+                return;
+            }
+
+            // --- 5. 通常モード (混合抽選) ---
+            let candidatePool = [...normalPool.always]; // 基本セット
+
+            // 時間帯追加
+            // 朝: 5:00 - 9:00
+            if (hour >= 5 && hour < 9) {
+                candidatePool = candidatePool.concat(normalPool.morning);
+            }
+            // 夜: 22:00 - 4:59
+            if (hour >= 22 || hour < 5) {
+                candidatePool = candidatePool.concat(normalPool.night);
+            }
+
+            // 日付追加
+            if (month === 12) {
+                if (date === 23) candidatePool = candidatePool.concat(normalPool.day23);
+                if (date === 24) candidatePool = candidatePool.concat(normalPool.day24);
+                if (date === 25) candidatePool = candidatePool.concat(normalPool.day25);
+                if (date >= 26)  candidatePool = candidatePool.concat(normalPool.dayAfter);
+            } else if (month === 1) { // 1月も「旅行後」扱い
+                candidatePool = candidatePool.concat(normalPool.dayAfter);
+            }
+
+            // 抽選
+            const message = pickRandom(candidatePool);
+            showBubble(message);
         }
+
+        // --- ユーティリティ ---
 
         function pickRandom(array) {
             return array[Math.floor(Math.random() * array.length)];
+        }
+
+        function showBubble(text) {
+            const bubble = document.getElementById('speech-bubble');
+            bubble.style.display = "block";
+            bubble.innerHTML = "";
+            typeWriter(text, bubble, 0);
         }
 
         function typeWriter(text, element, index) {
@@ -404,7 +511,7 @@
             }
 
             if (index < text.length - 1) {
-                const speed = 50 + Math.random() * 50; 
+                const speed = 40 + Math.random() * 30; // 少し早めに
                 typingTimer = setTimeout(() => {
                     typeWriter(text, element, index + 1);
                 }, speed);
@@ -413,62 +520,22 @@
             }
         }
 
-        function setFakeTime(timeStr) {
-            currentTimeOverride = timeStr;
-            const fakeDate = new Date(timeStr);
-            alert(`現在時刻を【${timeStr}】に設定しました。\nキャラクターをタップして確認してください。`);
-            updateDebugDisplay(fakeDate);
-            tapCount = 0; 
-            
-            checkSpecialPresent(); // ボタンの状態更新
-        }
-
-        function setManualTime() {
-            const val = document.getElementById('manualDebugTime').value;
-            if(val) setFakeTime(val);
-        }
-
-        function resetTime() {
-            currentTimeOverride = null;
-            alert("本来の現在時刻に戻しました。");
-            updateDebugDisplay(new Date());
-
-            checkSpecialPresent(); // ボタンの状態更新
-        }
-
-        function resetIntro() {
-            localStorage.removeItem(STORAGE_INTRO_KEY);
-            tapCount = 0;
-            alert("自己紹介を未読状態に戻しました。\n最初からタップしてみてください。");
-        }
-
-        function updateDebugDisplay(dateObj) {
-            const display = document.getElementById('debug-display');
-            const str = `${dateObj.getMonth()+1}/${dateObj.getDate()} ${dateObj.getHours()}:${String(dateObj.getMinutes()).padStart(2,'0')}`;
-            const status = currentTimeOverride ? "偽装中" : "通常";
-            display.innerText = `現在時刻(${status}): ${str}`;
-        }
-
-        // ▼プレゼント表示チェック関数
+        // プレゼントボタン制御
         function checkSpecialPresent() {
             const btn = document.getElementById('special-present-btn');
-            const now = currentTimeOverride ? new Date(currentTimeOverride) : new Date();
+            const now = new Date();
 
             if (now >= RELEASE_DATE) {
-                // 【解禁】 12/25以降
                 btn.href = "coupon.html"; 
                 btn.innerHTML = '<span class="icon">🎁</span> スペシャルプレゼント';
-                
                 btn.style.backgroundColor = '#fff0f5';
                 btn.style.borderColor = '#ff69b4';
                 btn.style.color = '#ff69b4';
                 btn.style.pointerEvents = 'auto'; 
                 btn.style.opacity = '1';
             } else {
-                // 【ロック中】 12/24以前
                 btn.href = "#"; 
                 btn.innerHTML = '<span class="icon">🔒</span> ????';
-                
                 btn.style.backgroundColor = '#f0f0f0';
                 btn.style.borderColor = '#ccc';
                 btn.style.color = '#aaa';
@@ -478,7 +545,6 @@
             btn.style.display = 'block'; 
         }
 
-        // ページ読み込み時にチェックを実行
         document.addEventListener('DOMContentLoaded', checkSpecialPresent);
 
     </script>
