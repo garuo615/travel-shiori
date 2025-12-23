@@ -4,6 +4,11 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>旅のスケジュール</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=DotGothic16&display=swap" rel="stylesheet">
+
     <style>
         /* 京都・滋賀テーマ */
         :root {
@@ -11,48 +16,48 @@
             --bg-color: #fdfcf8;
             --text-color: #4a3b32;
             --locked-color: #ccc;
+            --tab-inactive: #e0e0e0;
         }
 
         body {
             font-family: "Hiragino Mincho ProN", "Yu Mincho", serif;
-            padding: 20px;
-            max-width: 600px;
-            margin: 0 auto;
+            margin: 0;
+            padding: 0;
             background-color: var(--bg-color);
             color: var(--text-color);
+            padding-bottom: 40px; /* 余白調整 */
         }
 
-        /* ヘッダー周りのデザイン（ホームボタン追加） */
+        /* ヘッダー */
         header {
-            position: relative;
-            text-align: center;
-            margin-bottom: 40px;
-            padding-bottom: 10px;
+            position: sticky;
+            top: 0;
+            z-index: 50;
+            background-color: var(--bg-color); 
             border-bottom: 2px solid var(--primary-color);
+            text-align: center;
+            padding-top: 30px; 
+            padding-bottom: 0; 
         }
 
         h1 {
             font-size: 24px;
             color: var(--primary-color);
             margin: 0;
-            padding-top: 5px;
+            margin-bottom: 15px;
+            letter-spacing: 1px;
         }
 
-       /* 🏠 ホームボタン（画像版） */
         .home-btn {
             position: absolute;
-            left: 20px;      /* 左端からの距離 */
-            top: 50%;
-            transform: translateY(-50%); /* 上下の真ん中 */
-            
-            width: 28px;     /* アイコンの大きさ */
+            left: 20px;      
+            top: 30px; 
+            width: 28px;
             height: 28px;
-            
             display: block;
             transition: transform 0.1s;
         }
         
-        /* 画像の色を白くする設定 */
         .home-btn img {
             width: 100%;
             height: 100%;
@@ -60,60 +65,107 @@
         }
 
         .home-btn:active {
-            transform: translateY(-50%) scale(0.9);
+            transform: translateY(2px) scale(0.9);
+        }
+
+        /* タブ切り替え */
+        .tab-container {
+            display: flex;
+            justify-content: center;
+            width: 100%;
+        }
+
+        .tab {
+            flex: 1;
+            padding: 12px 0;
+            text-align: center;
+            font-weight: bold;
+            cursor: pointer;
+            background-color: var(--tab-inactive);
+            color: #888;
+            transition: all 0.3s;
+            border-top-left-radius: 10px;
+            border-top-right-radius: 10px;
+            margin: 0 2px;
+            font-family: sans-serif;
+            font-size: 14px;
+        }
+
+        .tab.active {
+            background-color: var(--primary-color);
+            color: white;
+        }
+
+        /* タイムラインエリア */
+        .schedule-container {
+            display: none;
+            padding-top: 20px;
+            animation: fadeIn 0.3s ease;
+        }
+        .schedule-container.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(5px); }
+            to { opacity: 1; transform: translateY(0); }
         }
 
         .timeline {
             position: relative;
-            margin-left: 20px;
-            border-left: 3px solid var(--primary-color);
-            padding-left: 30px;
-            padding-bottom: 20px;
+            margin: 0 auto;
+            max-width: 600px;
+            padding: 0 20px 20px 40px; 
+        }
+
+        /* 縦線 */
+        .timeline::before {
+            content: '';
+            position: absolute;
+            left: 29px; 
+            top: 0;
+            bottom: 0;
+            width: 3px;
+            background-color: var(--primary-color);
+            z-index: 0;
         }
 
         .event {
             position: relative;
             margin-bottom: 40px;
+            background: white;
+            padding: 15px;
+            border-radius: 10px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
             transition: all 0.5s ease;
+            z-index: 1; 
         }
 
-        .event::before {
+        .event::after {
             content: '';
             position: absolute;
-            left: -39px;
-            top: 5px;
+            left: -26px; 
+            top: 20px;
             width: 15px;
             height: 15px;
             background-color: white;
             border: 3px solid var(--primary-color);
             border-radius: 50%;
-            z-index: 1;
         }
 
         .time {
             font-family: sans-serif;
             font-weight: bold;
             color: var(--primary-color);
-            font-size: 14px;
+            font-size: 16px;
             margin-bottom: 5px;
         }
 
-        /* ロック中 */
-        .event.locked .title {
-            color: var(--locked-color);
-            font-style: italic;
-            font-family: sans-serif;
-            letter-spacing: 2px;
-        }
-        .event.locked .desc { display: none; }
-        .event.locked::before { border-color: var(--locked-color); }
-        .event.locked .time { color: var(--locked-color); }
-
-        /* 開放時 */
         .title {
             font-size: 18px;
             font-weight: bold;
-            margin-bottom: 8px;
+            margin-bottom: 10px;
+            line-height: 1.4;
         }
 
         .desc {
@@ -122,28 +174,22 @@
             line-height: 1.6;
             font-family: sans-serif;
             background-color: #fff5f0;
-            padding: 15px;
+            padding: 10px;
             border-radius: 8px;
             border-left: 4px solid var(--primary-color);
         }
-        
-        .back-link {
-            display: block;
-            text-align: center;
-            margin-top: 50px;
-            color: var(--primary-color);
-            text-decoration: none;
-            font-family: sans-serif;
-        }
 
-        #debug-area {
-            margin-top: 50px;
-            padding: 10px;
-            background: #eee;
-            font-size: 12px;
-            font-family: sans-serif;
-            border-radius: 5px;
+        /* ロック状態 */
+        .event.locked .title {
+            color: var(--locked-color);
+            font-family: 'DotGothic16', sans-serif;
+            letter-spacing: 2px;
         }
+        .event.locked .desc { display: none; }
+        .event.locked::after { border-color: var(--locked-color); }
+        .event.locked .time { color: var(--locked-color); }
+        .event.locked { box-shadow: none; background: #fafafa; }
+
     </style>
 </head>
 <body>
@@ -152,100 +198,195 @@
         <a href="index.html" class="home-btn">
             <img src="images/home.png" alt="ホーム">
         </a>
-        <h1>📅 1日目の予定</h1>
+        <h1>📅 旅のスケジュール</h1>
+        
+        <div class="tab-container">
+            <div class="tab active" onclick="switchTab('day1')">1日目 (12/24)</div>
+            <div class="tab" onclick="switchTab('day2')">2日目 (12/25)</div>
+        </div>
     </header>
 
-    <div class="timeline">
-        <div class="event" data-unlock="2023-11-29T00:00">
-            <div class="time">10:00</div>
-            <div class="title">京都駅 集合</div>
-            <div class="desc">
-                ついに旅行スタート！<br>
-                中央改札口（京都タワーが見える方）で待ち合わせ。
+    <div id="day1" class="schedule-container active">
+        <div class="timeline">
+            <div class="event" data-unlock="2025-12-23T00:00" data-title="南浦和駅 出発">
+                <div class="time">08:00</div>
+                <div class="title">？？？</div>
+                <div class="desc">バタバタせずにスタートできますように、、</div>
             </div>
-        </div>
 
-        <div class="event" data-unlock="2025-11-30T11:30">
-            <div class="time">11:30</div>
-            <div class="title">清水寺へGO</div>
-            <div class="desc">
-                まずは定番スポットへ。<br>
-                バス停「五条坂」から歩きます。
+            <div class="event" data-unlock="2025-12-24T08:00" data-title="東京駅 出発">
+                <div class="time">09:00</div>
+                <div class="title">？？？</div>
+                <div class="desc">朝ごはんは駅弁かな？</div>
             </div>
-        </div>
 
-        <div class="event" data-unlock="2025-11-30T15:00">
-            <div class="time">15:00</div>
-            <div class="title">ホテル チェックイン</div>
-            <div class="desc">
-                歩き疲れたので一旦休憩。<br>
-                ホテル：ザ・ゲートホテル京都高瀬川
+            <div class="event" data-unlock="2025-12-24T08:00" data-title="京都駅 到着">
+                <div class="time">11:15</div>
+                <div class="title">？？？</div>
+                <div class="desc">久しぶりの京都だ(？)</div>
             </div>
-        </div>
 
-        <div class="event" data-unlock="2025-11-30T18:00">
-            <div class="time">18:00</div>
-            <div class="title">✨ サプライズディナー ✨</div>
-            <div class="desc">
-                今夜はちょっと贅沢に。<br>
-                鴨川納涼床のお店を予約しました！
+            <div class="event" data-unlock="2025-12-24T12:00" data-title="ケーキ受け取り 🎂">
+                <div class="time">11:30</div>
+                <div class="title">？？？</div>
+                <div class="desc">クリスマスケーキ✖　　誕生日ケーキ◎</div>
+            </div>
+
+            <div class="event" data-unlock="2025-12-24T12:00" data-title="大津駅 到着">
+                <div class="time">12:00</div>
+                <div class="title">？？？</div>
+                <div class="desc">どこだよここ、、</div>
+            </div>
+
+            <div class="event" data-unlock="2025-12-24T12:00" data-title="チェックイン & 荷物預け">
+                <div class="time">12:30</div>
+                <div class="title">？？？</div>
+                <div class="desc">ぬかりない事前チェックイン申請　　　　　　「俺じゃなきゃ見逃しちゃね」</div>
+            </div>
+
+            <div class="event" data-unlock="2025-12-24T12:00" data-title="ランチ 🍴">
+                <div class="time">13:00</div>
+                <div class="title">？？？</div>
+                <div class="desc">第一指名はそばです。</div>
+            </div>
+
+            <div class="event" data-unlock="2025-12-24T13:00" data-title="商店街 散策 🚶‍♂️">
+                <div class="time">14:00</div>
+                <div class="title">？？？</div>
+                <div class="desc">町ブラってやつだね</div>
+            </div>
+
+            <div class="event" data-unlock="2025-12-24T14:00" data-title="チェックイン (入室) ">
+                <div class="time">16:00</div>
+                <div class="title">？？？</div>
+                <div class="desc">渾身の宿！！！</div>
+            </div>
+
+            <div class="event" data-unlock="2025-12-24T15:00" data-title="ディナー 🍽️">
+                <div class="time">18:00</div>
+                <div class="title">？？？</div>
+                <div class="desc">素敵な夜を...🎄</div>
             </div>
         </div>
     </div>
 
-    <a href="index.html" class="back-link">＜ 表紙に戻る</a>
+    <div id="day2" class="schedule-container">
+        <div class="timeline">
+            
+            <div class="event" data-unlock="2025-12-24T18:00" data-title="起床 ☀️">
+                <div class="time">08:00</div>
+                <div class="title">？？？</div>
+                <div class="desc">誕生日おめでとう！2日目の始まり。</div>
+            </div>
 
-    <div id="debug-area">
-        <p>【動作確認モード】時間を操作してロック解除を試せます</p>
-        <button onclick="setFakeTime('2025-11-30T09:00')">朝9時</button>
-        <button onclick="setFakeTime('2025-11-30T12:00')">昼12時</button>
-        <button onclick="setFakeTime('2025-11-30T19:00')">夜7時</button>
-        <button onclick="resetTime()">現在時刻に戻す</button>
+            <div class="event" data-unlock="2025-12-25T08:00" data-title="モーニング ☕">
+                <div class="time">09:00</div>
+                <div class="title">？？？</div>
+                <div class="desc">優雅な朝食を(wo)</div>
+            </div>
+
+            <div class="event" data-unlock="2025-12-25T08:00" data-title="チェックアウト">
+                <div class="time">11:00</div>
+                <div class="title">？？？</div>
+                <div class="desc">忘れ物はない？</div>
+            </div>
+
+            <div class="event" data-unlock="2025-12-25T08:00" data-title="大津駅 出発 🚃">
+                <div class="time">11:30</div>
+                <div class="title">？？？</div>
+                <div class="desc">次の目的地へ移動！</div>
+            </div>
+
+            <div class="event" data-unlock="2025-12-25T11:00" data-title="近江八幡駅 到着">
+                <div class="time">12:15</div>
+                <div class="title">？？？</div>
+                <div class="desc">どこだよここ</div>
+            </div>
+
+            <div class="event" data-unlock="2025-12-25T13:00" data-title="八幡掘めぐり 🛶">
+                <div class="time">13:00</div>
+                <div class="title">？？？</div>
+                <div class="desc">厳しい寒さの中にある</div>
+            </div>
+
+            <div class="event" data-unlock="2025-12-25T13:00" data-title="ランチ 🍴">
+                <div class="time">14:00</div>
+                <div class="title">？？？</div>
+                <div class="desc">君はどっちを選ぶ？？</div>
+            </div>
+
+            <div class="event" data-unlock="2025-12-25T14:00" data-title="ラ コリーナ近江八幡 🍩">
+                <div class="time">16:00</div>
+                <div class="title">？？？</div>
+                <div class="desc">名前がかわいいよね</div>
+            </div>
+
+            <div class="event" data-unlock="2025-12-25T16:00" data-title="サクッと夕飯 🍜">
+                <div class="time">19:00</div>
+                <div class="title">？？？</div>
+                <div class="desc">すみません未定です。。。</div>
+            </div>
+
+            <div class="event" data-unlock="2025-12-25T16:00" data-title="京都駅 出発 🚅">
+                <div class="time">19:54</div>
+                <div class="title">？？？</div>
+                <div class="desc">気をつけて帰ろう</div>
+            </div>
+
+            <div class="event" data-unlock="2025-12-25T16:00" data-title="南浦和駅 到着 🏠">
+                <div class="time">23:00</div>
+                <div class="title">？？？</div>
+                <div class="desc">お疲れ様でした！最高の旅だったね。</div>
+            </div>
+
+        </div>
     </div>
 
     <script>
-        let currentTimeOverride = null;
-
         document.addEventListener('DOMContentLoaded', () => {
+            // タブの初期表示制御（今日が12/25なら2日目を表示）
+            const now = new Date();
+            if (now.getMonth() === 11 && now.getDate() === 25) { // 11=12月
+                switchTab('day2');
+            } else {
+                switchTab('day1');
+            }
+
             updateSchedule();
+            setInterval(updateSchedule, 60000);
         });
 
+        function switchTab(dayId) {
+            document.querySelectorAll('.schedule-container').forEach(el => el.classList.remove('active'));
+            document.getElementById(dayId).classList.add('active');
+
+            document.querySelectorAll('.tab').forEach(el => el.classList.remove('active'));
+            const tabs = document.querySelectorAll('.tab');
+            if (dayId === 'day1') tabs[0].classList.add('active');
+            else tabs[1].classList.add('active');
+        }
+
         function updateSchedule() {
-            const now = currentTimeOverride ? new Date(currentTimeOverride) : new Date();
+            const now = new Date(); // 常に現在時刻を使用
             const events = document.querySelectorAll('.event');
 
             events.forEach(event => {
                 const unlockTimeStr = event.getAttribute('data-unlock');
+                const realTitle = event.getAttribute('data-title');
+                
                 if (!unlockTimeStr) return;
 
                 const unlockTime = new Date(unlockTimeStr);
                 const titleEl = event.querySelector('.title');
-                
-                if (!event.getAttribute('data-original-title')) {
-                    event.setAttribute('data-original-title', titleEl.textContent);
-                }
-                const originalTitle = event.getAttribute('data-original-title');
 
                 if (now >= unlockTime) {
                     event.classList.remove('locked');
-                    titleEl.textContent = originalTitle;
+                    titleEl.textContent = realTitle;
                 } else {
                     event.classList.add('locked');
-                    titleEl.textContent = "Coming Soon...";
+                    titleEl.textContent = "？？？";
                 }
             });
-        }
-
-        function setFakeTime(timeStr) {
-            currentTimeOverride = timeStr;
-            alert(`現在時刻を仮想的に【${timeStr}】にしました`);
-            updateSchedule();
-        }
-        
-        function resetTime() {
-            currentTimeOverride = null;
-            alert("本来の現在時刻に戻しました");
-            updateSchedule();
         }
     </script>
 </body>
