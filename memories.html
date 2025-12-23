@@ -22,39 +22,41 @@
             padding-bottom: 140px; 
         }
 
+        /* ▼▼▼ ヘッダーデザインの変更（スケジュールページ準拠） ▼▼▼ */
         header {
-            text-align: center;
-            padding: 20px;
-            background-color: var(--primary-color);
-            color: white;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-            position: sticky;
+            position: sticky; /* スクロール追従のみ維持 */
             top: 0;
             z-index: 50;
-            /* ホームボタン用に追加 */
-            position: sticky; 
-        }
-        
-        h1 {
-            margin: 0;
-            font-size: 20px;
+            background-color: var(--bg-color); /* 背景を白（オフホワイト）に */
+            
+            text-align: center;
+            margin-bottom: 20px; /* アルバムは見やすさ重視で少し詰め気味に */
+            padding-top: 20px;   /* 上に余白を追加 */
+            padding-bottom: 10px;
+            border-bottom: 2px solid var(--primary-color); /* オレンジの下線 */
         }
 
-       /* 🏠 ホームボタン（画像版） */
+        h1 {
+            font-size: 24px;
+            color: var(--primary-color); /* 文字色をオレンジに */
+            margin: 0;
+            padding-top: 5px;
+        }
+
+        /* 🏠 ホームボタン（スケジュールページと統一） */
         .home-btn {
             position: absolute;
-            left: 20px;      /* 左端からの距離 */
+            left: 20px;      
             top: 50%;
-            transform: translateY(-50%); /* 上下の真ん中 */
+            transform: translateY(-50%); 
             
-            width: 28px;     /* アイコンの大きさ */
+            width: 28px;     /* 28pxに統一 */
             height: 28px;
             
             display: block;
             transition: transform 0.1s;
         }
         
-        /* 画像の色を白くする設定 */
         .home-btn img {
             width: 100%;
             height: 100%;
@@ -64,6 +66,7 @@
         .home-btn:active {
             transform: translateY(-50%) scale(0.9);
         }
+        /* ▲▲▲ 変更ここまで ▲▲▲ */
 
         /* タイムラインエリア */
         .timeline {

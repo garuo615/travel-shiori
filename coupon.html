@@ -30,49 +30,54 @@
             -webkit-user-select: none;
         }
 
+        /* ▼▼▼ ヘッダーデザインの変更（統一仕様） ▼▼▼ */
         header {
-            background-color: var(--secondary-color);
-            color: white;
-            padding: 30px 20px;
-            border-bottom-left-radius: 20px;
-            border-bottom-right-radius: 20px;
-            box-shadow: 0 4px 10px rgba(255, 105, 180, 0.3);
             position: relative;
-            display: flex; /* タイトルとボタンを横並びに調整 */
-            align-items: center;
-            justify-content: center;
+            text-align: center;
+            
+            /* 背景を白（オフホワイト）に変更 */
+            background-color: var(--bg-color); 
+            
+            /* オレンジ色の下線を追加 */
+            border-bottom: 2px solid var(--primary-color);
+            
+            margin-bottom: 40px;
+            padding-top: 30px; 
+            padding-bottom: 10px;
         }
 
-        /* ★ホームボタン（画像）のデザイン */
+        h1 {
+            font-size: 24px;
+            color: var(--primary-color); /* 文字色をオレンジに */
+            margin: 0;
+            padding-top: 5px;
+            letter-spacing: 1px;
+        }
+
+        /* 🏠 ホームボタン（サイズ・位置を統一） */
         .home-btn {
             position: absolute;
-            top: 50%; /* 上下中央に配置 */
-            left: 20px;
-            transform: translateY(-50%); /* 上下中央の位置調整 */
+            left: 20px;      
+            top: 50%;
+            transform: translateY(-50%); 
+            
+            width: 28px;     /* 28pxに統一 */
+            height: 28px;
+            
             display: block;
-            width: 40px; /* 画像の表示サイズ（お好みで調整してください） */
-            height: auto;
-            transition: transform 0.2s;
+            transition: transform 0.1s;
         }
         
-        /* 画像自体を枠に合わせる */
         .home-btn img {
             width: 100%;
-            height: auto;
-            display: block;
+            height: 100%;
+            object-fit: contain;
         }
 
-        /* クリック時のアニメーション */
         .home-btn:active {
-            transform: translateY(-50%) scale(0.8);
+            transform: translateY(-50%) scale(0.9);
         }
-        
-        h1 {
-            margin: 0;
-            font-size: 24px;
-            letter-spacing: 1px;
-            /* line-heightは削除してFlexboxで中央揃えにします */
-        }
+        /* ▲▲▲ 変更ここまで ▲▲▲ */
 
         .coupon-list {
             padding: 30px 20px;
